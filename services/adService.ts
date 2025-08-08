@@ -3,6 +3,7 @@
 // This is a placeholder for the real Adivery SDK.
 // The real SDK should be loaded in index.html.
 declare const adivery: {
+    configure: (config: { app_id: string }) => void;
     requestRewardedAd: (placementId: string, onAdLoaded: () => void, onAdLoadFailed: (reason: string) => void) => void;
     show: (placementId: string) => void;
     setRewardedAdListener: (callbacks: {
@@ -13,17 +14,27 @@ declare const adivery: {
 } | undefined;
 
 
-// Using Adivery's official test placement ID for rewarded videos.
-// For a production app, replace this with your actual ID from the Adivery dashboard.
+// Using Adivery's official test IDs.
+// For a production app, replace these with your actual IDs from the Adivery dashboard.
+const ADIVERY_APP_ID = 'a2a214c7-c46e-41a4-a3ad-272d1033bb0a';
 const REWARDED_VIDEO_PLACEMENT_ID = 'c490ec46-c2c4-4ed4-8df1-c19af438c88f';
 
 let isAdRewarded = false;
 let adClosedCallback: ((rewarded: boolean) => void) | null = null;
+let isSdkInitialized = false; // Flag to ensure initialization runs only once
 
-const setupListeners = () => {
-    // Adivery SDK may not be loaded immediately
+const initializeAdiverySdk = () => {
+    // Adivery SDK may not be loaded immediately. We retry until it is.
     const trySetup = () => {
+        if (isSdkInitialized) {
+            return; // Already initialized
+        }
+        
         if (typeof adivery !== 'undefined') {
+            console.log("Initializing Adivery SDK...");
+            // This is the crucial step: configuring the SDK with an App ID.
+            adivery.configure({ app_id: ADIVERY_APP_ID });
+
             adivery.setRewardedAdListener({
                 onAdRewarded: (placementId) => {
                      if (placementId === REWARDED_VIDEO_PLACEMENT_ID) {
@@ -53,6 +64,9 @@ const setupListeners = () => {
                     }
                 }
             });
+
+            isSdkInitialized = true;
+            console.log("Adivery SDK initialized and listeners are set.");
         } else {
              // Retry if the SDK is not yet available
             setTimeout(trySetup, 500);
@@ -61,8 +75,8 @@ const setupListeners = () => {
     trySetup();
 };
 
-// Set up listeners once when the module is loaded.
-setupListeners();
+// Initialize the SDK when the module is first loaded.
+initializeAdiverySdk();
 
 
 /**
@@ -71,15 +85,13 @@ setupListeners();
  */
 export const showRewardedVideo = (): Promise<boolean> => {
     return new Promise((resolve, reject) => {
-        // Adivery SDK is loaded via a script tag in index.html.
-        // If it's not available, it means the script failed to load or is blocked.
-        if (typeof adivery === 'undefined') {
-            console.error("Adivery SDK not found. The script might be blocked or failed to load.");
-            // Reject the promise so the calling component can handle the error.
+        if (!isSdkInitialized || typeof adivery === 'undefined') {
+            console.error("Adivery SDK not initialized. The script might be blocked or failed to load.");
             reject(new Error("Ad service is not available. Check your connection or ad blocker."));
             return;
         }
 
+        // Set the callback that will be called when the ad is closed.
         adClosedCallback = (rewarded) => {
             resolve(rewarded);
         };
@@ -95,6 +107,7 @@ export const showRewardedVideo = (): Promise<boolean> => {
         
         const onAdLoadFailed = (reason: string) => {
             console.error(`Adivery failed to load rewarded ad: ${reason}`);
+            // Rejecting the promise allows the UI component to show an error message.
             reject(new Error(`Failed to load ad: ${reason}`));
         };
 
