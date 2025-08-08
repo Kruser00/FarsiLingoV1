@@ -1,4 +1,5 @@
 
+
 export enum ExerciseType {
   MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
   TRANSLATE_TO_ENGLISH = 'TRANSLATE_TO_ENGLISH',
@@ -29,4 +30,5 @@ export interface UserProgress {
     lastLessonDate: string | null; // ISO date string yyyy-mm-dd
     lastHeartRefillTimestamp: number; // UTC timestamp ms
     userLevel: UserLevel | null;
+    isSoundEnabled: boolean;
 }

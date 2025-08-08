@@ -1,6 +1,8 @@
 import React from 'react';
 import { AnswerStatus } from '../types';
 import { CheckCircleIcon, XCircleIcon, HeartIcon } from './icons';
+import { useUserProgress } from '../contexts/UserProgressContext';
+import { playButtonClickSound } from '../services/soundService';
 
 interface LessonFooterProps {
   answerStatus: AnswerStatus;
@@ -13,6 +15,18 @@ interface LessonFooterProps {
 }
 
 export const LessonFooter: React.FC<LessonFooterProps> = ({ answerStatus, onCheck, onContinue, isLastQuestion, correctAnswer, isCheckDisabled = false, isChecking = false }) => {
+  const { isSoundEnabled } = useUserProgress();
+  
+  const handleCheckClick = () => {
+    playButtonClickSound(isSoundEnabled);
+    onCheck();
+  };
+
+  const handleContinueClick = () => {
+    playButtonClickSound(isSoundEnabled);
+    onContinue();
+  };
+
   const renderFeedback = () => {
     if (answerStatus === 'CORRECT') {
       return (
@@ -57,7 +71,7 @@ export const LessonFooter: React.FC<LessonFooterProps> = ({ answerStatus, onChec
             <div className="h-12 flex items-center">{renderFeedback()}</div>
             {answerStatus === 'UNANSWERED' ? (
                 <button
-                    onClick={() => onCheck()}
+                    onClick={handleCheckClick}
                     disabled={isCheckDisabled}
                     className={`px-8 py-3 rounded-xl text-lg font-bold shadow-lg transition-all hover:scale-105 flex items-center justify-center min-w-[120px] ${getButtonClass()}`}
                 >
@@ -65,7 +79,7 @@ export const LessonFooter: React.FC<LessonFooterProps> = ({ answerStatus, onChec
                 </button>
             ) : (
                 <button
-                    onClick={onContinue}
+                    onClick={handleContinueClick}
                     className={`px-8 py-3 rounded-xl text-lg font-bold shadow-lg transition-transform hover:scale-105 ${getButtonClass()}`}
                 >
                     {isLastQuestion ? 'پایان' : 'ادامه'}

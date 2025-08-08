@@ -15,6 +15,7 @@ interface UserProgressContextType extends UserProgress {
     addGems: (amount: number) => void;
     refillHeartsWithGems: () => boolean;
     refillHeartsWithAd: () => void;
+    toggleSound: () => void;
 }
 
 const UserProgressContext = createContext<UserProgressContextType | undefined>(undefined);
@@ -27,13 +28,19 @@ const getDefaultProgress = (): UserProgress => ({
     lastLessonDate: null,
     lastHeartRefillTimestamp: Date.now(),
     userLevel: null,
+    isSoundEnabled: true, // Sounds are on by default
 });
 
 export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [progress, setProgress] = useState<UserProgress>(() => {
         try {
             const storedProgress = localStorage.getItem(STORAGE_KEY);
-            return storedProgress ? JSON.parse(storedProgress) : getDefaultProgress();
+            if (storedProgress) {
+                const parsed = JSON.parse(storedProgress);
+                // Ensure isSoundEnabled has a default value if loading from old state
+                return { ...getDefaultProgress(), ...parsed };
+            }
+            return getDefaultProgress();
         } catch (error) {
             console.error("Failed to parse user progress from localStorage", error);
             return getDefaultProgress();
@@ -129,8 +136,13 @@ export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ childr
         }
     }, [progress.lastLessonDate]);
 
+    const toggleSound = useCallback(() => {
+        setProgress(prev => ({ ...prev, isSoundEnabled: !prev.isSoundEnabled }));
+    }, []);
+
+
     return (
-        <UserProgressContext.Provider value={{ ...progress, setUserLevel, addXp, loseHeart, updateStreak, addGems, refillHeartsWithGems, refillHeartsWithAd }}>
+        <UserProgressContext.Provider value={{ ...progress, setUserLevel, addXp, loseHeart, updateStreak, addGems, refillHeartsWithGems, refillHeartsWithAd, toggleSound }}>
             {children}
         </UserProgressContext.Provider>
     );

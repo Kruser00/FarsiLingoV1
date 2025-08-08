@@ -2,6 +2,8 @@ import React from 'react';
 import { BookOpenIcon, UtensilsIcon, PlaneIcon, ShoppingCartIcon, UsersIcon, CalendarIcon, BriefcaseIcon, UserIcon, CalendarDaysIcon, HeartIcon, MapPinIcon, MessageSquareIcon, LockIcon, ClockIcon, HelpCircleIcon, ArchiveIcon, CloudIcon, HeartPulseIcon, HourglassIcon, ScaleIcon, QuoteIcon, GlobeIcon, PaletteIcon, AppleIcon, SmileIcon, ShoppingBagIcon, CompassIcon, HouseIcon, BusIcon } from './icons';
 import { UserLevel } from '../types';
 import NoHeartsModal from './NoHeartsModal';
+import { useUserProgress } from '../contexts/UserProgressContext';
+import { playButtonClickSound } from '../services/soundService';
 
 interface HomeScreenProps {
   onStartLesson: (topic: string, level: string) => void;
@@ -94,7 +96,13 @@ const difficultyLevels = [
 
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ onStartLesson, userLevel, showNoHeartsModal, setShowNoHeartsModal }) => {
+  const { isSoundEnabled } = useUserProgress();
   const userRank = userLevel ? levelRanks[userLevel] : 0; // 0 means nothing unlocked if no level
+
+  const handleLessonClick = (topic: string, level: string) => {
+    playButtonClickSound(isSoundEnabled);
+    onStartLesson(topic, level);
+  }
 
   return (
     <div className="text-center">
@@ -136,7 +144,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartLesson, userLevel, showN
                 </h3>
                 <p className="text-slate-300 my-4" style={{ direction: 'rtl' }}>{level.description}</p>
                 <button
-                  onClick={() => onStartLesson(`${level.level} Challenge`, level.level)}
+                  onClick={() => handleLessonClick(`${level.level} Challenge`, level.level)}
                   className="w-full max-w-xs mx-auto px-6 py-3 rounded-xl text-lg font-bold shadow-md transition-transform hover:scale-105 bg-indigo-600 text-white hover:bg-indigo-500"
                 >
                   باز کردن قفل با آزمون
@@ -154,7 +162,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartLesson, userLevel, showN
                 {level.topics.map((topic) => (
                   <button
                     key={topic.name}
-                    onClick={() => onStartLesson(topic.name, level.level)}
+                    onClick={() => handleLessonClick(topic.name, level.level)}
                     className="flex flex-col items-center justify-center text-center gap-2 p-3 bg-slate-800/50 rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 w-full hover:bg-slate-700/70"
                   >
                     <div className="flex items-center justify-center w-12 h-12 bg-slate-700/70 rounded-full">

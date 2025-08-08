@@ -24,7 +24,7 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
   const [isCheckingAnswer, setIsCheckingAnswer] = useState(false);
   const [sessionXp, setSessionXp] = useState(0);
 
-  const { loseHeart, addXp } = useUserProgress();
+  const { loseHeart, addXp, isSoundEnabled } = useUserProgress();
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -70,20 +70,20 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
     }
     
     if (isCorrect) {
-      playCorrectSound();
+      playCorrectSound(isSoundEnabled);
       setAnswerStatus('CORRECT');
       setCorrectAnswers(prev => prev + 1);
       const xpGained = 10;
       setSessionXp(prev => prev + xpGained);
       addXp(xpGained);
     } else {
-      playIncorrectSound();
-      playHeartLostSound();
+      playIncorrectSound(isSoundEnabled);
+      playHeartLostSound(isSoundEnabled);
       loseHeart();
       setAnswerStatus('INCORRECT');
     }
     setIsCheckingAnswer(false);
-  }, [answerStatus, userAnswer, exercises, currentIndex, isCheckingAnswer, loseHeart, addXp]);
+  }, [answerStatus, userAnswer, exercises, currentIndex, isCheckingAnswer, loseHeart, addXp, isSoundEnabled]);
 
   const handleContinue = () => {
     if (currentIndex < exercises.length - 1) {

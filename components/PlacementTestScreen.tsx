@@ -5,6 +5,7 @@ import { playCorrectSound, playIncorrectSound } from '../services/soundService';
 import { ExerciseCard } from './ExerciseCard';
 import { LessonFooter } from './LessonFooter';
 import { ProgressBar } from './ProgressBar';
+import { useUserProgress } from '../contexts/UserProgressContext';
 
 interface PlacementTestScreenProps {
   onFinish: (scores: Record<UserLevel, { score: number; total: number }>) => void;
@@ -24,6 +25,7 @@ const PlacementTestScreen: React.FC<PlacementTestScreenProps> = ({ onFinish, onG
     Intermediate: { score: 0, total: 0 },
     Advanced: { score: 0, total: 0 },
   });
+  const { isSoundEnabled } = useUserProgress();
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -80,7 +82,7 @@ const PlacementTestScreen: React.FC<PlacementTestScreenProps> = ({ onFinish, onG
     }
     
     if (isCorrect) {
-      playCorrectSound();
+      playCorrectSound(isSoundEnabled);
       if (difficulty) {
         setScores(prev => ({
           ...prev,
@@ -91,12 +93,12 @@ const PlacementTestScreen: React.FC<PlacementTestScreenProps> = ({ onFinish, onG
         }));
       }
     } else {
-      playIncorrectSound();
+      playIncorrectSound(isSoundEnabled);
     }
 
     setAnswerStatus(isCorrect ? 'CORRECT' : 'INCORRECT');
     setIsCheckingAnswer(false);
-  }, [answerStatus, userAnswer, exercises, currentIndex, isCheckingAnswer]);
+  }, [answerStatus, userAnswer, exercises, currentIndex, isCheckingAnswer, isSoundEnabled]);
 
   const handleContinue = () => {
     if (currentIndex < exercises.length - 1) {

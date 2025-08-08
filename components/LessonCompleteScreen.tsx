@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { TrophyIcon } from './icons';
+import { useUserProgress } from '../contexts/UserProgressContext';
+import { playLessonCompleteSound } from '../services/soundService';
 
 interface LessonCompleteScreenProps {
   score: number;
@@ -12,6 +14,11 @@ interface LessonCompleteScreenProps {
 
 const LessonCompleteScreen: React.FC<LessonCompleteScreenProps> = ({ score, total, xp, topic, onRestart, onGoHome }) => {
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+    const { isSoundEnabled } = useUserProgress();
+
+    useEffect(() => {
+        playLessonCompleteSound(isSoundEnabled);
+    }, [isSoundEnabled]);
     
     const getFeedback = () => {
         if (topic.includes('Challenge') && percentage < 80) {

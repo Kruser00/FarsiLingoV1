@@ -1,5 +1,5 @@
 import React from 'react';
-import { HomeIcon, HeartIcon, FlameIcon, GemIcon } from './icons';
+import { HomeIcon, HeartIcon, FlameIcon, GemIcon, SpeakerLoudIcon, SpeakerOffIcon } from './icons';
 import { useUserProgress } from '../contexts/UserProgressContext';
 
 interface HeaderProps {
@@ -15,7 +15,7 @@ const StatItem: React.FC<{ icon: React.ReactNode; value: number | string; colorC
 );
 
 export const Header: React.FC<HeaderProps> = ({ onHomeClick, showHomeButton }) => {
-    const { hearts, streak, gems, userLevel } = useUserProgress();
+    const { hearts, streak, gems, userLevel, isSoundEnabled, toggleSound } = useUserProgress();
     
     return (
         <header className="w-full flex justify-between items-center py-2 flex-wrap gap-y-2">
@@ -38,6 +38,13 @@ export const Header: React.FC<HeaderProps> = ({ onHomeClick, showHomeButton }) =
                         <StatItem icon={<HeartIcon className="w-5 h-5"/>} value={hearts} colorClass="text-red-500" />
                         <StatItem icon={<FlameIcon className="w-5 h-5"/>} value={streak} colorClass="text-orange-400" />
                         <StatItem icon={<GemIcon className="w-5 h-5"/>} value={gems} colorClass="text-teal-400" />
+                        <button
+                            onClick={toggleSound}
+                            className="p-2.5 rounded-lg text-slate-300 bg-slate-800/50 hover:bg-white/10 transition-colors"
+                            aria-label={isSoundEnabled ? "Mute sounds" : "Unmute sounds"}
+                        >
+                            {isSoundEnabled ? <SpeakerLoudIcon className="w-5 h-5" /> : <SpeakerOffIcon className="w-5 h-5" />}
+                        </button>
                         <button
                             onClick={onHomeClick}
                             className="p-2.5 rounded-lg text-slate-300 bg-slate-800/50 hover:bg-white/10 transition-colors"
