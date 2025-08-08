@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUserProgress } from '../contexts/UserProgressContext';
-import { HeartIcon, GemIcon, XCircleIcon, VideoIcon } from './icons';
+import { HeartIcon, GemIcon, XCircleIcon, VideoIcon, ClockIcon } from './icons';
 import { showRewardedVideo } from '../services/adService';
+import { playButtonClickSound } from '../services/soundService';
+
+const AD_REWARD_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const GEMS_FOR_REFILL = 50;
 
 interface NoHeartsModalProps {
   isOpen: boolean;
@@ -9,15 +13,27 @@ interface NoHeartsModalProps {
 }
 
 const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
-    const { gems, refillHeartsWithGems, refillHeartsWithAd } = useUserProgress();
-    const GEMS_FOR_REFILL = 50;
+    const { gems, refillHeartsWithGems, refillHeartsWithAd, lastAdRewardTimestamp, isSoundEnabled } = useUserProgress();
     const [isShowingAd, setIsShowingAd] = useState(false);
+    const [cooldownTime, setCooldownTime] = useState(0);
 
-    if (!isOpen) {
-        return null;
-    }
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const updateCooldown = () => {
+            const timeSinceLastAd = Date.now() - lastAdRewardTimestamp;
+            const remaining = AD_REWARD_COOLDOWN_MS - timeSinceLastAd;
+            setCooldownTime(Math.max(0, remaining));
+        };
+
+        updateCooldown();
+        const interval = setInterval(updateCooldown, 1000);
+
+        return () => clearInterval(interval);
+    }, [lastAdRewardTimestamp, isOpen]);
 
     const handleGemRefill = () => {
+        playButtonClickSound(isSoundEnabled);
         const success = refillHeartsWithGems();
         if (success) {
             onClose();
@@ -27,7 +43,8 @@ const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
     }
 
     const handleAdRefill = async () => {
-        if (isShowingAd) return;
+        if (isShowingAd || cooldownTime > 0) return;
+        playButtonClickSound(isSoundEnabled);
         setIsShowingAd(true);
         try {
             const rewarded = await showRewardedVideo();
@@ -44,6 +61,14 @@ const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
             setIsShowingAd(false);
         }
     };
+
+    const minutes = Math.floor(cooldownTime / 60000);
+    const seconds = Math.floor((cooldownTime % 60000) / 1000).toString().padStart(2, '0');
+    const isAdButtonDisabled = isShowingAd || cooldownTime > 0;
+
+    if (!isOpen) {
+        return null;
+    }
 
     return (
         <div 
@@ -62,17 +87,22 @@ const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
                     شما تمام قلب‌هایتان را از دست دادید!
                 </h2>
                 <p className="text-lg text-slate-300 mt-2 mb-6" style={{direction: 'rtl'}}>
-                    برای شروع یک درس جدید، قلب‌های خود را دوباره پر کنید یا برای دریافت قلب رایگان، یک تبلیغ تماشا کنید.
+                    برای شروع یک درس جدید، قلب‌های خود را دوباره پر کنید یا منتظر بمانید.
                 </p>
                 <button
                     onClick={handleAdRefill}
-                    disabled={isShowingAd}
-                    className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-lg font-bold shadow-md transition-all hover:scale-105 bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-wait"
+                    disabled={isAdButtonDisabled}
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-lg font-bold shadow-md transition-all hover:scale-105 bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-indigo-400/70 disabled:cursor-not-allowed"
                 >
                     {isShowingAd ? (
                         <>
                            <div className="w-6 h-6 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
                            <span className="ml-2">در حال بارگذاری تبلیغ...</span>
+                        </>
+                    ) : cooldownTime > 0 ? (
+                        <>
+                            <ClockIcon className="w-6 h-6"/>
+                            <span>{minutes}:{seconds} دیگر صبر کنید</span>
                         </>
                     ) : (
                         <>
@@ -87,7 +117,7 @@ const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
                     className="w-full mt-3 flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-lg font-bold shadow-md transition-all hover:scale-105 bg-teal-600 text-white hover:bg-teal-500 disabled:bg-slate-600 disabled:cursor-not-allowed"
                 >
                     <GemIcon className="w-6 h-6" />
-                    پر کردن قلب‌ها (۵۰ الماس)
+                    پر کردن قلب‌ها ({GEMS_FOR_REFILL} الماس)
                 </button>
                  <button
                     onClick={onClose}

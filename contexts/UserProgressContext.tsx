@@ -15,6 +15,7 @@ interface UserProgressContextType extends UserProgress {
     addGems: (amount: number) => void;
     refillHeartsWithGems: () => boolean;
     refillHeartsWithAd: () => void;
+    addGemsFromAd: (amount: number) => void;
     toggleSound: () => void;
 }
 
@@ -27,6 +28,7 @@ const getDefaultProgress = (): UserProgress => ({
     streak: 0,
     lastLessonDate: null,
     lastHeartRefillTimestamp: Date.now(),
+    lastAdRewardTimestamp: 0,
     userLevel: null,
     isSoundEnabled: true, // Sounds are on by default
 });
@@ -108,6 +110,15 @@ export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ childr
             ...prev,
             hearts: MAX_HEARTS,
             lastHeartRefillTimestamp: Date.now(),
+            lastAdRewardTimestamp: Date.now(),
+        }));
+    }, []);
+    
+    const addGemsFromAd = useCallback((amount: number) => {
+        setProgress(prev => ({
+            ...prev,
+            gems: prev.gems + amount,
+            lastAdRewardTimestamp: Date.now(),
         }));
     }, []);
     
@@ -142,7 +153,7 @@ export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ childr
 
 
     return (
-        <UserProgressContext.Provider value={{ ...progress, setUserLevel, addXp, loseHeart, updateStreak, addGems, refillHeartsWithGems, refillHeartsWithAd, toggleSound }}>
+        <UserProgressContext.Provider value={{ ...progress, setUserLevel, addXp, loseHeart, updateStreak, addGems, refillHeartsWithGems, refillHeartsWithAd, addGemsFromAd, toggleSound }}>
             {children}
         </UserProgressContext.Provider>
     );

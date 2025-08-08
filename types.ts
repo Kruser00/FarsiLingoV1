@@ -29,6 +29,7 @@ export interface UserProgress {
     streak: number;
     lastLessonDate: string | null; // ISO date string yyyy-mm-dd
     lastHeartRefillTimestamp: number; // UTC timestamp ms
+    lastAdRewardTimestamp: number; // UTC timestamp ms
     userLevel: UserLevel | null;
     isSoundEnabled: boolean;
 }
