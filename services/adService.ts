@@ -13,8 +13,10 @@ declare const adivery: {
 } | undefined;
 
 
-// TODO: Replace with your actual Adivery Rewarded Video Placement ID
-const REWARDED_VIDEO_PLACEMENT_ID = 'c490ec46-c2c4-4ed4-8df1-c19af438c88f';
+// Using Adivery's official test placement ID for rewarded videos.
+// For a production app, replace this with your actual ID from the Adivery dashboard.
+const REWARDED_VIDEO_PLACEMENT_ID = 'c490ec46-c2c4-4ed4-8df1-c19af438c88f
+';
 
 let isAdRewarded = false;
 let adClosedCallback: ((rewarded: boolean) => void) | null = null;
@@ -70,9 +72,12 @@ setupListeners();
  */
 export const showRewardedVideo = (): Promise<boolean> => {
     return new Promise((resolve, reject) => {
+        // Adivery SDK is loaded via a script tag in index.html.
+        // If it's not available, it means the script failed to load or is blocked.
         if (typeof adivery === 'undefined') {
-            console.error("Adivery SDK not found. Simulating successful ad reward for development.");
-            resolve(true); // Dev fallback
+            console.error("Adivery SDK not found. The script might be blocked or failed to load.");
+            // Reject the promise so the calling component can handle the error.
+            reject(new Error("Ad service is not available. Check your connection or ad blocker."));
             return;
         }
 
@@ -82,7 +87,11 @@ export const showRewardedVideo = (): Promise<boolean> => {
 
         const onAdLoaded = () => {
             console.log("Adivery rewarded ad loaded.");
-            adivery.show(REWARDED_VIDEO_PLACEMENT_ID);
+             if (typeof adivery !== 'undefined') {
+                adivery.show(REWARDED_VIDEO_PLACEMENT_ID);
+             } else {
+                reject(new Error("Ad service became unavailable before showing the ad."));
+             }
         };
         
         const onAdLoadFailed = (reason: string) => {
