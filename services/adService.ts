@@ -15,8 +15,7 @@ declare const adivery: {
 
 // Using Adivery's official test placement ID for rewarded videos.
 // For a production app, replace this with your actual ID from the Adivery dashboard.
-const REWARDED_VIDEO_PLACEMENT_ID = 'c490ec46-c2c4-4ed4-8df1-c19af438c88f
-';
+const REWARDED_VIDEO_PLACEMENT_ID = 'c490ec46-c2c4-4ed4-8df1-c19af438c88f';
 
 let isAdRewarded = false;
 let adClosedCallback: ((rewarded: boolean) => void) | null = null;
