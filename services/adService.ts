@@ -16,7 +16,7 @@ declare const adivery: {
 
 // Using Adivery's official test IDs.
 // For a production app, replace these with your actual IDs from the Adivery dashboard.
-const ADIVERY_APP_ID = 'a2a214c7-c46e-41a4-a3ad-272d1033bb0a';
+const ADIVERY_APP_ID = '8b1aa2bf-13dd-4586-99c2-d0b6c74ad9a1';
 const REWARDED_VIDEO_PLACEMENT_ID = 'c490ec46-c2c4-4ed4-8df1-c19af438c88f';
 
 let isAdRewarded = false;
