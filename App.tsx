@@ -1,0 +1,161 @@
+import React, { useState } from 'react';
+import StartScreen from './components/StartScreen';
+import HomeScreen from './components/HomeScreen';
+import LessonScreen from './components/LessonScreen';
+import LessonCompleteScreen from './components/LessonCompleteScreen';
+import PlacementTestScreen from './components/PlacementTestScreen';
+import PlacementTestCompleteScreen from './components/PlacementTestCompleteScreen';
+import ChooseLevelScreen from './components/ChooseLevelScreen';
+import { Header } from './components/Header';
+import { AppView, UserLevel } from './types';
+import { UserProgressProvider, useUserProgress } from './contexts/UserProgressContext';
+
+const AppContent: React.FC = () => {
+  const { userLevel, setUserLevel, updateStreak, addGems, hearts } = useUserProgress();
+
+  // Set the initial view based on whether a user level is already stored.
+  // This ensures the start screen is only shown on the first visit.
+  const [currentView, setCurrentView] = useState<AppView>(() => userLevel ? 'HOME' : 'START');
+  
+  const [currentLesson, setCurrentLesson] = useState<{ topic: string; level: string } | null>(null);
+  const [lessonResult, setLessonResult] = useState<{ score: number, total: number, xp: number } | null>(null);
+  const [lessonKey, setLessonKey] = useState<number>(0);
+  const [placementTestLevel, setPlacementTestLevel] = useState<UserLevel>('Beginner');
+  const [showNoHeartsModal, setShowNoHeartsModal] = useState(false);
+
+  const startLesson = (topic: string, level: string) => {
+    if (hearts <= 0) {
+      setShowNoHeartsModal(true);
+      return;
+    }
+    setCurrentLesson({ topic, level });
+    setCurrentView('LESSON');
+    setLessonKey(prevKey => prevKey + 1);
+  };
+
+  const handleLessonFinish = (score: number, total: number, xp: number) => {
+    // Award gems and update streak for completing a lesson (not a challenge test)
+    if (!currentLesson?.topic.includes('Challenge')) {
+      addGems(10); // Award 10 gems for finishing a lesson
+      updateStreak();
+    }
+    
+    // Logic to unlock next level
+    const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+    if (userLevel && currentLesson?.topic.includes('Challenge') && percentage >= 80) {
+        const levelRanks: Record<UserLevel, number> = { Beginner: 1, Intermediate: 2, Advanced: 3 };
+        const unlockedLevel = currentLesson.level as UserLevel;
+        if (levelRanks[unlockedLevel] > levelRanks[userLevel]) {
+             setUserLevel(unlockedLevel);
+        }
+    }
+
+    setLessonResult({ score, total, xp });
+    setCurrentView('LESSON_COMPLETE');
+  };
+
+  const restartLesson = () => {
+    if (currentLesson) {
+        startLesson(currentLesson.topic, currentLesson.level);
+    }
+  };
+
+  const goHome = () => {
+    setCurrentLesson(null);
+    setLessonResult(null);
+    setCurrentView('HOME');
+  };
+
+  const goToStart = () => {
+    setCurrentLesson(null);
+    setLessonResult(null);
+    setCurrentView('START');
+  }
+
+  const handleStartPlacementTest = () => setCurrentView('PLACEMENT_TEST');
+  
+  const handleChooseLevel = () => {
+    setCurrentView('CHOOSE_LEVEL');
+  };
+
+  const handleLevelSelected = (level: UserLevel) => {
+    setUserLevel(level);
+    setCurrentView('HOME');
+  };
+
+  const handlePlacementTestFinish = (scores: Record<UserLevel, { score: number; total: number }>) => {
+    let determinedLevel: UserLevel = 'Beginner';
+    const advancedPassed = scores.Advanced.total > 0 && (scores.Advanced.score / scores.Advanced.total) >= 0.66;
+    const intermediatePassed = scores.Intermediate.total > 0 && (scores.Intermediate.score / scores.Intermediate.total) >= 0.66;
+
+    if (advancedPassed) {
+        determinedLevel = 'Advanced';
+    } else if (intermediatePassed) {
+        determinedLevel = 'Intermediate';
+    } else {
+        determinedLevel = 'Beginner';
+    }
+    
+    setPlacementTestLevel(determinedLevel);
+    setUserLevel(determinedLevel);
+    setCurrentView('PLACEMENT_TEST_COMPLETE');
+  };
+
+  // The previous check here is no longer needed as the initial state of 
+  // `currentView` correctly handles the application's starting point.
+
+  const renderContent = () => {
+    switch (currentView) {
+      case 'START':
+        return <StartScreen onStartTest={handleStartPlacementTest} onChooseLevel={handleChooseLevel} />;
+      case 'CHOOSE_LEVEL':
+        return <ChooseLevelScreen onSelectLevel={handleLevelSelected} />;
+      case 'PLACEMENT_TEST':
+        return <PlacementTestScreen onFinish={handlePlacementTestFinish} onGoHome={goToStart} />;
+      case 'PLACEMENT_TEST_COMPLETE':
+        return <PlacementTestCompleteScreen level={placementTestLevel} onContinue={goHome} />;
+      case 'HOME':
+        return <HomeScreen onStartLesson={startLesson} userLevel={userLevel} showNoHeartsModal={showNoHeartsModal} setShowNoHeartsModal={setShowNoHeartsModal} />;
+      case 'LESSON':
+        if (currentLesson) {
+          return <LessonScreen key={lessonKey} topic={currentLesson.topic} level={currentLesson.level} onFinish={handleLessonFinish} />;
+        }
+        return null;
+      case 'LESSON_COMPLETE':
+        if (lessonResult && currentLesson) {
+          return <LessonCompleteScreen 
+            score={lessonResult.score}
+            total={lessonResult.total}
+            xp={lessonResult.xp}
+            topic={currentLesson.topic}
+            onRestart={restartLesson}
+            onGoHome={goHome}
+          />;
+        }
+        return null;
+      default:
+        return <StartScreen onStartTest={handleStartPlacementTest} onChooseLevel={handleChooseLevel} />;
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-transparent text-slate-800 dark:text-slate-200 flex flex-col items-center p-4 selection:bg-purple-400/50">
+      <div className="w-full max-w-2xl mx-auto">
+        <Header onHomeClick={currentView === 'HOME' || !userLevel ? goToStart : goHome} showHomeButton={currentView !== 'START' && !!userLevel} />
+        <main className="mt-8">
+          {renderContent()}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+
+const App: React.FC = () => (
+    <UserProgressProvider>
+        <AppContent />
+    </UserProgressProvider>
+);
+
+
+export default App;
