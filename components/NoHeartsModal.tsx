@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useUserProgress } from '../contexts/UserProgressContext';
 import { HeartIcon, GemIcon, XCircleIcon, VideoIcon } from './icons';
+import { showRewardedVideo } from '../services/adService';
 
 interface NoHeartsModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface NoHeartsModalProps {
 const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
     const { gems, refillHeartsWithGems, refillHeartsWithAd } = useUserProgress();
     const GEMS_FOR_REFILL = 50;
+    const [isShowingAd, setIsShowingAd] = useState(false);
 
     if (!isOpen) {
         return null;
@@ -24,9 +26,23 @@ const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
         }
     }
 
-    const handleAdRefill = () => {
-        refillHeartsWithAd();
-        onClose();
+    const handleAdRefill = async () => {
+        if (isShowingAd) return;
+        setIsShowingAd(true);
+        try {
+            const rewarded = await showRewardedVideo();
+            if (rewarded) {
+                refillHeartsWithAd();
+                onClose();
+            } else {
+                alert('شما برای دریافت قلب باید ویدیو را تا انتها تماشا کنید.');
+            }
+        } catch (error) {
+            console.error("Ad error:", error);
+            alert('مشکلی در نمایش تبلیغ به وجود آمد. لطفا دوباره تلاش کنید.');
+        } finally {
+            setIsShowingAd(false);
+        }
     };
 
     return (
@@ -50,10 +66,20 @@ const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
                 </p>
                 <button
                     onClick={handleAdRefill}
-                    className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-lg font-bold shadow-md transition-all hover:scale-105 bg-indigo-600 text-white hover:bg-indigo-500"
+                    disabled={isShowingAd}
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl text-lg font-bold shadow-md transition-all hover:scale-105 bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-indigo-400 disabled:cursor-wait"
                 >
-                    <VideoIcon className="w-6 h-6" />
-                    مشاهده تبلیغ برای قلب کامل
+                    {isShowingAd ? (
+                        <>
+                           <div className="w-6 h-6 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
+                           <span className="ml-2">در حال بارگذاری تبلیغ...</span>
+                        </>
+                    ) : (
+                        <>
+                           <VideoIcon className="w-6 h-6" />
+                           <span>مشاهده تبلیغ برای قلب کامل</span>
+                        </>
+                    )}
                 </button>
                 <button
                     onClick={handleGemRefill}
