@@ -9,6 +9,17 @@ import { ProgressBar } from './ProgressBar';
 import { useUserProgress } from '../contexts/UserProgressContext';
 import NoHeartsModal from './NoHeartsModal';
 
+const LESSON_SESSION_KEY = 'farsilingo_lesson_session';
+
+interface LessonSessionState {
+  exercises: Exercise[];
+  currentIndex: number;
+  correctAnswers: number;
+  sessionXp: number;
+  topic: string;
+  level: string;
+}
+
 interface LessonScreenProps {
   topic: string;
   level: string;
@@ -30,13 +41,54 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
   const { hearts, loseHeart, addXp, isSoundEnabled } = useUserProgress();
   
   useEffect(() => {
-    // Preload an ad when the lesson starts as an optimization.
-    // It runs in the background and failures are handled silently by the adService.
     preloadRewardedVideo();
-  }, []); // Run only on initial mount of the lesson screen.
+  }, []);
+
+  // Effect to save lesson progress to sessionStorage
+  useEffect(() => {
+    if (isLoading || exercises.length === 0) {
+      return;
+    }
+    const lessonState: LessonSessionState = {
+      exercises,
+      currentIndex,
+      correctAnswers,
+      sessionXp,
+      topic,
+      level,
+    };
+    try {
+      sessionStorage.setItem(LESSON_SESSION_KEY, JSON.stringify(lessonState));
+    } catch (e) {
+      console.error("Could not save lesson session state.", e);
+    }
+  }, [exercises, currentIndex, correctAnswers, sessionXp, topic, level, isLoading]);
 
   useEffect(() => {
-    const fetchLesson = async () => {
+    const fetchOrRestoreLesson = async () => {
+      // 1. Try to restore from session storage
+      try {
+        const savedStateRaw = sessionStorage.getItem(LESSON_SESSION_KEY);
+        if (savedStateRaw) {
+          const savedState: LessonSessionState = JSON.parse(savedStateRaw);
+          if (savedState.topic === topic && savedState.level === level) {
+            console.log("Restoring lesson from session.");
+            setExercises(savedState.exercises);
+            setCurrentIndex(savedState.currentIndex);
+            setCorrectAnswers(savedState.correctAnswers);
+            setSessionXp(savedState.sessionXp);
+            setIsLoading(false);
+            return;
+          } else {
+            sessionStorage.removeItem(LESSON_SESSION_KEY);
+          }
+        }
+      } catch (e) {
+        console.error("Could not restore lesson from session. Fetching new lesson.", e);
+        sessionStorage.removeItem(LESSON_SESSION_KEY);
+      }
+
+      // 2. If restore fails, fetch a new lesson
       try {
         setIsLoading(true);
         setError(null);
@@ -53,17 +105,13 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
       }
     };
 
-    fetchLesson();
+    fetchOrRestoreLesson();
   }, [topic, level]);
 
-  // Effect to handle running out of hearts
   useEffect(() => {
-    // This check ensures the modal doesn't pop up on initial load if hearts are already 0,
-    // but only after a lesson has started and the user runs out.
     if (exercises.length > 0 && hearts <= 0) {
         setIsOutOfHearts(true);
     } else {
-        // If hearts get refilled (e.g., via an ad), this will hide the modal.
         setIsOutOfHearts(false);
     }
   }, [hearts, exercises.length]);
@@ -100,7 +148,7 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
     } else {
       playIncorrectSound(isSoundEnabled);
       playHeartLostSound(isSoundEnabled);
-      loseHeart(); // This state update will be caught by the useEffect
+      loseHeart();
       setAnswerStatus('INCORRECT');
     }
     setIsCheckingAnswer(false);
@@ -142,7 +190,7 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
   }
 
   if (exercises.length === 0) {
-    return null; // Or some other placeholder
+    return null;
   }
   
   const currentExercise = exercises[currentIndex];

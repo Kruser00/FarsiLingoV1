@@ -15,6 +15,16 @@ import AnimatedBackground from './components/AnimatedBackground';
 import SplashScreen from './components/SplashScreen';
 import UpdatePrompt from './components/UpdatePrompt';
 
+const APP_SESSION_KEY = 'farsilingo_app_session';
+const LESSON_SESSION_KEY = 'farsilingo_lesson_session';
+
+interface AppSession {
+  currentView: AppView;
+  currentLesson: { topic: string; level: string } | null;
+  lessonResult: { score: number; total: number; xp: number } | null;
+  placementTestLevel: UserLevel | null;
+}
+
 const AppContent: React.FC = () => {
   const { 
     userLevel, 
@@ -26,12 +36,65 @@ const AppContent: React.FC = () => {
     hideConfirmationModal
   } = useUserProgress();
 
-  const [currentView, setCurrentView] = useState<AppView>(() => userLevel ? 'HOME' : 'START');
+  const [currentView, setCurrentView] = useState<AppView>(() => {
+    try {
+      const savedSessionRaw = sessionStorage.getItem(APP_SESSION_KEY);
+      if (savedSessionRaw) {
+        const savedSession: AppSession = JSON.parse(savedSessionRaw);
+        if (savedSession.currentView && (savedSession.currentView === 'START' || userLevel)) {
+          return savedSession.currentView;
+        }
+      }
+    } catch (e) { console.error("Could not parse session view", e); }
+    return userLevel ? 'HOME' : 'START';
+  });
   
-  const [currentLesson, setCurrentLesson] = useState<{ topic: string; level: string } | null>(null);
-  const [lessonResult, setLessonResult] = useState<{ score: number, total: number, xp: number } | null>(null);
+  const [currentLesson, setCurrentLesson] = useState<{ topic: string; level: string } | null>(() => {
+    try {
+      const savedSessionRaw = sessionStorage.getItem(APP_SESSION_KEY);
+      if (savedSessionRaw) return JSON.parse(savedSessionRaw).currentLesson || null;
+    } catch (e) { /* ignore */ }
+    return null;
+  });
+
+  const [lessonResult, setLessonResult] = useState<{ score: number, total: number, xp: number } | null>(() => {
+    try {
+      const savedSessionRaw = sessionStorage.getItem(APP_SESSION_KEY);
+      if (savedSessionRaw) return JSON.parse(savedSessionRaw).lessonResult || null;
+    } catch (e) { /* ignore */ }
+    return null;
+  });
+
+  const [placementTestLevel, setPlacementTestLevel] = useState<UserLevel | null>(() => {
+    try {
+      const savedSessionRaw = sessionStorage.getItem(APP_SESSION_KEY);
+      if (savedSessionRaw) return JSON.parse(savedSessionRaw).placementTestLevel || null;
+    } catch (e) { /* ignore */ }
+    return null;
+  });
+
   const [lessonKey, setLessonKey] = useState<number>(0);
-  const [placementTestLevel, setPlacementTestLevel] = useState<UserLevel>('Beginner');
+
+  // Save state to session storage whenever it changes
+  useEffect(() => {
+    const sessionState: AppSession = {
+      currentView,
+      currentLesson,
+      lessonResult,
+      placementTestLevel,
+    };
+    try {
+      // Don't save if we are on start screen and have a user level, which means we are resetting.
+      if (currentView === 'START' && userLevel) {
+          sessionStorage.removeItem(APP_SESSION_KEY);
+          return;
+      }
+      sessionStorage.setItem(APP_SESSION_KEY, JSON.stringify(sessionState));
+    } catch (e) {
+      console.error("Could not save app session state.", e);
+    }
+  }, [currentView, currentLesson, lessonResult, placementTestLevel, userLevel]);
+
 
   const startLesson = (topic: string, level: string) => {
     setCurrentLesson({ topic, level });
@@ -40,6 +103,7 @@ const AppContent: React.FC = () => {
   };
 
   const handleLessonFinish = (score: number, total: number, xp: number) => {
+    sessionStorage.removeItem(LESSON_SESSION_KEY);
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
     if (userLevel && currentLesson?.topic.includes('Challenge') && percentage >= 80) {
         const levelRanks: Record<UserLevel, number> = { Beginner: 1, Intermediate: 2, Advanced: 3 };
@@ -60,12 +124,15 @@ const AppContent: React.FC = () => {
   };
 
   const goHome = () => {
+    sessionStorage.removeItem(LESSON_SESSION_KEY);
     setCurrentLesson(null);
     setLessonResult(null);
     setCurrentView('HOME');
   };
 
   const goToStart = () => {
+    sessionStorage.removeItem(LESSON_SESSION_KEY);
+    sessionStorage.removeItem(APP_SESSION_KEY);
     setCurrentLesson(null);
     setLessonResult(null);
     setCurrentView('START');
@@ -109,7 +176,10 @@ const AppContent: React.FC = () => {
       case 'PLACEMENT_TEST':
         return <PlacementTestScreen onFinish={handlePlacementTestFinish} onGoHome={goToStart} />;
       case 'PLACEMENT_TEST_COMPLETE':
-        return <PlacementTestCompleteScreen level={placementTestLevel} onContinue={goHome} />;
+        if (placementTestLevel) {
+          return <PlacementTestCompleteScreen level={placementTestLevel} onContinue={goHome} />;
+        }
+        return null;
       case 'HOME':
         return <HomeScreen onStartLesson={startLesson} userLevel={userLevel} />;
       case 'LESSON':
