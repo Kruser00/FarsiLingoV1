@@ -1,4 +1,5 @@
 import { Exercise } from '../types';
+import { pregeneratedLessons } from './pregeneratedLessons';
 
 async function callApi<T>(action: string, payload: unknown): Promise<T> {
     try {
@@ -72,6 +73,18 @@ function jaroWinkler(s1: string, s2: string): number {
 
 
 export const generateLesson = async (topic: string, level: string): Promise<Exercise[]> => {
+  // --- OFFLINE-FIRST FOR BEGINNER & INTERMEDIATE LESSONS ---
+  if (level === 'Beginner' || level === 'Intermediate') {
+    const variations = pregeneratedLessons[topic];
+    if (variations && variations.length > 0) {
+      console.log(`Loading pre-generated lesson for topic: "${topic}"`);
+      // Randomly select one of the pre-made lesson variations
+      const lesson = variations[Math.floor(Math.random() * variations.length)];
+      return Promise.resolve(lesson);
+    }
+  }
+
+  // --- CACHE/API FOR ADVANCED AND FALLBACK ---
   const lessonCacheKey = `lesson-${level}-${topic}`;
   
   // 1. Try to load from localStorage first

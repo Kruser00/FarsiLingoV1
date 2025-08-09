@@ -37,9 +37,7 @@ let isConfigured = false;
 let adiveryInitializationPromise: Promise<void> | null = null;
 
 /**
- * Ensures the Adivery SDK is loaded and initialized.
- * It polls for the global window.Adivery object and rejects if it doesn't appear
- * within a timeout period (e.g., due to an ad blocker or network issue).
+ * Ensures the Adivery SDK is loaded and initialized by dynamically injecting the script.
  * @returns A promise that resolves when Adivery is ready.
  */
 const ensureAdiveryIsReady = (): Promise<void> => {
@@ -50,42 +48,65 @@ const ensureAdiveryIsReady = (): Promise<void> => {
 
     // Start the initialization process.
     adiveryInitializationPromise = new Promise((resolve, reject) => {
-        const checkInterval = 100; // ms
-        const timeout = 10000; // 10 seconds
-        let elapsedTime = 0;
+        // If the SDK object already exists (perhaps from a previous session), configure and resolve.
+        if (typeof window.Adivery !== 'undefined' && window.Adivery.configure) {
+            if (!isConfigured) {
+                try {
+                    window.Adivery.configure(ADIVERY_APP_ID);
+                    isConfigured = true;
+                    console.log("Adivery SDK already present, configured.");
+                } catch (e) {
+                     return reject(new Error("Ad service configuration failed."));
+                }
+            }
+            return resolve();
+        }
 
-        const intervalId = setInterval(() => {
-            // If the SDK is now available on the window object...
-            if (typeof window.Adivery !== 'undefined' && window.Adivery.configure) {
-                clearInterval(intervalId);
-                if (!isConfigured) {
-                    try {
-                        // Configure the SDK. This should only be called once.
-                        window.Adivery.configure(ADIVERY_APP_ID);
-                        isConfigured = true;
-                        console.log("Adivery SDK configured.");
-                    } catch (e) {
-                        console.error("Adivery SDK is present but configuration failed.", e);
-                        // Reset the promise to allow for future retries if config fails.
-                        adiveryInitializationPromise = null;
-                        reject(new Error("Ad service configuration failed."));
-                        return;
+        // Dynamically create and inject the script tag.
+        const script = document.createElement('script');
+        script.src = 'https://github.com/adivery/adivery-js/releases/latest/download/adivery.global.js';
+        script.async = true;
+
+        script.onload = () => {
+            // Script has loaded, now wait for the Adivery object to be defined.
+            const checkInterval = 100;
+            const timeout = 8000; // 8 seconds
+            let elapsedTime = 0;
+
+            const intervalId = setInterval(() => {
+                if (typeof window.Adivery !== 'undefined' && window.Adivery.configure) {
+                    clearInterval(intervalId);
+                    if (!isConfigured) {
+                        try {
+                            window.Adivery.configure(ADIVERY_APP_ID);
+                            isConfigured = true;
+                            console.log("Adivery SDK configured.");
+                            resolve();
+                        } catch (e) {
+                            console.error("Adivery SDK is present but configuration failed.", e);
+                            reject(new Error("Ad service configuration failed."));
+                        }
+                    } else {
+                        resolve();
+                    }
+                } else {
+                    elapsedTime += checkInterval;
+                    if (elapsedTime >= timeout) {
+                        clearInterval(intervalId);
+                        console.error("Adivery SDK loaded but object not found within timeout.");
+                        reject(new Error("Ad service failed to initialize."));
                     }
                 }
-                resolve();
-                return;
-            }
+            }, checkInterval);
+        };
 
-            // If the SDK is not yet available, check for timeout.
-            elapsedTime += checkInterval;
-            if (elapsedTime >= timeout) {
-                clearInterval(intervalId);
-                console.error("Adivery SDK did not load within the timeout period.");
-                // Reset promise to allow retries later if needed
-                adiveryInitializationPromise = null; 
-                reject(new Error("Ad service is not available. Check your connection or ad blocker."));
-            }
-        }, checkInterval);
+        script.onerror = () => {
+            console.error("Adivery SDK script failed to load. Check connection or ad blockers.");
+            adiveryInitializationPromise = null; // Allow retrying
+            reject(new Error("Ad service is not available. Check your connection or ad blocker."));
+        };
+
+        document.head.appendChild(script);
     });
 
     return adiveryInitializationPromise;
