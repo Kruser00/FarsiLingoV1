@@ -59,12 +59,22 @@ const PlacementTestScreen: React.FC<PlacementTestScreenProps> = ({ onFinish, onG
     fetchTest();
   }, []);
 
+  const handleContinue = useCallback(() => {
+    if (currentIndex < exercises.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      setUserAnswer('');
+      setAnswerStatus('UNANSWERED');
+    } else {
+       onFinish(scores);
+    }
+  }, [currentIndex, exercises.length, onFinish, scores]);
+
   const handleCheckAnswer = useCallback(async () => {
     const answerToCheck = userAnswer;
-    if (answerStatus !== 'UNANSWERED' || !answerToCheck.trim() || isCheckingAnswer) return;
-    
-    setIsCheckingAnswer(true);
     const currentExercise = exercises[currentIndex];
+    if (currentExercise.type === ExerciseType.LEARN || answerStatus !== 'UNANSWERED' || !answerToCheck.trim() || isCheckingAnswer) return;
+
+    setIsCheckingAnswer(true);
     const { type, answer, difficulty } = currentExercise;
 
     const typesForLenientCheck: ExerciseType[] = [ExerciseType.TRANSLATE_TO_ENGLISH];
@@ -100,15 +110,14 @@ const PlacementTestScreen: React.FC<PlacementTestScreenProps> = ({ onFinish, onG
     setIsCheckingAnswer(false);
   }, [answerStatus, userAnswer, exercises, currentIndex, isCheckingAnswer, isSoundEnabled]);
 
-  const handleContinue = () => {
-    if (currentIndex < exercises.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      setUserAnswer('');
-      setAnswerStatus('UNANSWERED');
+  const handleEnterPress = useCallback(() => {
+    if (answerStatus === 'UNANSWERED') {
+      handleCheckAnswer();
     } else {
-       onFinish(scores);
+      handleContinue();
     }
-  };
+  }, [answerStatus, handleCheckAnswer, handleContinue]);
+
 
   if (isLoading) {
     return (
@@ -148,10 +157,11 @@ const PlacementTestScreen: React.FC<PlacementTestScreenProps> = ({ onFinish, onG
             userAnswer={userAnswer}
             onAnswerChange={setUserAnswer}
             answerStatus={answerStatus}
-            onEnterPress={answerStatus === 'UNANSWERED' ? handleCheckAnswer : handleContinue}
+            onEnterPress={handleEnterPress}
         />
       </div>
       <LessonFooter
+        exerciseType={currentExercise.type}
         answerStatus={answerStatus}
         onCheck={handleCheckAnswer}
         onContinue={handleContinue}

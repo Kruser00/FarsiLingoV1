@@ -116,12 +116,22 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
     }
   }, [hearts, exercises.length]);
 
+  const handleContinue = useCallback(() => {
+    if (currentIndex < exercises.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      setUserAnswer('');
+      setAnswerStatus('UNANSWERED');
+    } else {
+       onFinish(correctAnswers, exercises.length, sessionXp);
+    }
+  }, [currentIndex, exercises.length, onFinish, correctAnswers, sessionXp]);
+
   const handleCheckAnswer = useCallback(async () => {
     const answerToCheck = userAnswer;
-    if (answerStatus !== 'UNANSWERED' || !answerToCheck.trim() || isCheckingAnswer) return;
+    const currentExercise = exercises[currentIndex];
+    if (currentExercise.type === ExerciseType.LEARN || answerStatus !== 'UNANSWERED' || !answerToCheck.trim() || isCheckingAnswer) return;
     
     setIsCheckingAnswer(true);
-    const currentExercise = exercises[currentIndex];
     const { type, answer } = currentExercise;
 
     const typesForLenientCheck: ExerciseType[] = [ExerciseType.TRANSLATE_TO_ENGLISH];
@@ -154,15 +164,18 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
     setIsCheckingAnswer(false);
   }, [answerStatus, userAnswer, exercises, currentIndex, isCheckingAnswer, loseHeart, addXp, isSoundEnabled]);
 
-  const handleContinue = () => {
-    if (currentIndex < exercises.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      setUserAnswer('');
-      setAnswerStatus('UNANSWERED');
-    } else {
-       onFinish(correctAnswers, exercises.length, sessionXp);
+  const handleEnterPress = useCallback(() => {
+    const currentExercise = exercises[currentIndex];
+    if (currentExercise.type === ExerciseType.LEARN) {
+      handleContinue();
+      return;
     }
-  };
+    if (answerStatus === 'UNANSWERED') {
+      handleCheckAnswer();
+    } else {
+      handleContinue();
+    }
+  }, [exercises, currentIndex, answerStatus, handleCheckAnswer, handleContinue]);
   
   const handleQuitLesson = () => {
     onFinish(correctAnswers, exercises.length, sessionXp);
@@ -207,10 +220,11 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
               userAnswer={userAnswer}
               onAnswerChange={setUserAnswer}
               answerStatus={answerStatus}
-              onEnterPress={answerStatus === 'UNANSWERED' ? handleCheckAnswer : handleContinue}
+              onEnterPress={handleEnterPress}
           />
         </div>
         <LessonFooter
+          exerciseType={currentExercise.type}
           answerStatus={answerStatus}
           onCheck={handleCheckAnswer}
           onContinue={handleContinue}

@@ -47,6 +47,7 @@ interface UserProgressContextType extends UserProgress {
     loseHeart: () => void;
     refillHeartsWithAd: () => void;
     toggleSound: () => void;
+    markLessonAsCompleted: (topic: string, level: string) => void;
     infoModal: InfoModalState;
     confirmationModal: ConfirmationModalState;
     showInfoModal: (title: string, message: string) => void;
@@ -65,6 +66,7 @@ const getDefaultProgress = (): UserProgress => ({
     lastAdRewardTimestamp: 0,
     userLevel: null,
     isSoundEnabled: true,
+    completedLessons: [],
 });
 
 export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -166,6 +168,17 @@ export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ childr
         setProgress(prev => ({ ...prev, isSoundEnabled: !prev.isSoundEnabled }));
     }, []);
     
+    const markLessonAsCompleted = useCallback((topic: string, level: string) => {
+        const lessonId = `${level}-${topic}`;
+        setProgress(prev => {
+            if (prev.completedLessons.includes(lessonId)) {
+                return prev;
+            }
+            const newCompletedLessons = [...prev.completedLessons, lessonId];
+            return { ...prev, completedLessons: newCompletedLessons };
+        });
+    }, []);
+    
     const xpForCurrentLevel = getXpForLevel(progress.level);
     const xpForNextLevel = getXpForLevel(progress.level + 1);
 
@@ -180,6 +193,7 @@ export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ childr
             loseHeart, 
             refillHeartsWithAd, 
             toggleSound,
+            markLessonAsCompleted,
             infoModal,
             confirmationModal,
             showInfoModal,

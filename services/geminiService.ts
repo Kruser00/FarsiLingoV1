@@ -1,5 +1,5 @@
 import { Exercise } from '../types';
-import { pregeneratedLessons } from './pregeneratedLessons';
+import { pregeneratedLessons, pregeneratedPlacementTests } from './pregeneratedData';
 
 async function callApi<T>(action: string, payload: unknown): Promise<T> {
     try {
@@ -118,35 +118,10 @@ export const generateLesson = async (topic: string, level: string): Promise<Exer
 };
 
 export const generatePlacementTest = async (): Promise<Exercise[]> => {
-    const testCacheKey = 'placement-test';
-
-    // 1. Try to load from localStorage
-    try {
-        const cachedTest = localStorage.getItem(testCacheKey);
-        if (cachedTest) {
-            console.log("Loading placement test from cache.");
-            return JSON.parse(cachedTest);
-        }
-    } catch(e) {
-        console.warn("Could not read placement test from localStorage", e);
-    }
-
-    // 2. Call API if not cached
-    try {
-        console.log("Generating placement test via API.");
-        const testExercises = await callApi<Exercise[]>('generatePlacementTest', {});
-
-        // 3. Cache the new test
-        try {
-            localStorage.setItem(testCacheKey, JSON.stringify(testExercises));
-        } catch(e) {
-            console.warn("Could not save placement test to localStorage", e);
-        }
-        return testExercises;
-    } catch (error) {
-        console.error("Error generating placement test:", error);
-        throw new Error("Could not generate the placement test. Please try again.");
-    }
+    console.log("Loading pre-generated placement test.");
+    // Randomly select one of the pre-made test variations
+    const test = pregeneratedPlacementTests[Math.floor(Math.random() * pregeneratedPlacementTests.length)];
+    return Promise.resolve(test);
 };
 
 export const evaluateAnswer = async (userAnswer: string, correctAnswer: string): Promise<boolean> => {

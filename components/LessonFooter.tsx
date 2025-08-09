@@ -1,10 +1,11 @@
 import React from 'react';
-import { AnswerStatus } from '../types';
+import { AnswerStatus, ExerciseType } from '../types';
 import { CheckCircleIcon, XCircleIcon, HeartIcon } from './icons';
 import { useUserProgress } from '../contexts/UserProgressContext';
 import { playButtonClickSound, triggerHapticFeedback } from '../services/soundService';
 
 interface LessonFooterProps {
+  exerciseType: ExerciseType;
   answerStatus: AnswerStatus;
   onCheck: () => void;
   onContinue: () => void;
@@ -14,7 +15,7 @@ interface LessonFooterProps {
   isChecking?: boolean;
 }
 
-export const LessonFooter: React.FC<LessonFooterProps> = ({ answerStatus, onCheck, onContinue, isLastQuestion, correctAnswer, isCheckDisabled = false, isChecking = false }) => {
+export const LessonFooter: React.FC<LessonFooterProps> = ({ exerciseType, answerStatus, onCheck, onContinue, isLastQuestion, correctAnswer, isCheckDisabled = false, isChecking = false }) => {
   const { isSoundEnabled } = useUserProgress();
   
   const handleCheckClick = () => {
@@ -28,6 +29,21 @@ export const LessonFooter: React.FC<LessonFooterProps> = ({ answerStatus, onChec
     triggerHapticFeedback(isSoundEnabled);
     onContinue();
   };
+  
+  if (exerciseType === ExerciseType.LEARN) {
+    return (
+        <footer className="w-full p-4 bg-slate-900/10 rounded-t-2xl border-t border-slate-700/50">
+            <div className="w-full max-w-2xl mx-auto flex items-center justify-end">
+                <button
+                    onClick={handleContinueClick}
+                    className="px-8 py-3 rounded-xl text-lg font-bold shadow-lg transition-transform hover:scale-105 bg-indigo-600 hover:bg-indigo-500 text-white"
+                >
+                    {isLastQuestion ? 'پایان' : 'ادامه'}
+                </button>
+            </div>
+        </footer>
+    );
+  }
 
   const renderFeedback = () => {
     if (answerStatus === 'CORRECT') {

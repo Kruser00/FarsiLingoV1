@@ -29,7 +29,8 @@ const AppContent: React.FC = () => {
   const { 
     userLevel, 
     setUserLevel, 
-    addXp, 
+    addXp,
+    markLessonAsCompleted,
     infoModal, 
     hideInfoModal,
     confirmationModal,
@@ -105,6 +106,13 @@ const AppContent: React.FC = () => {
   const handleLessonFinish = (score: number, total: number, xp: number) => {
     sessionStorage.removeItem(LESSON_SESSION_KEY);
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+    
+    // Mark lesson as completed for progression if score is high enough
+    if (userLevel && currentLesson && percentage >= 80) {
+        markLessonAsCompleted(currentLesson.topic, currentLesson.level);
+    }
+
+    // Handle level-up challenges
     if (userLevel && currentLesson?.topic.includes('Challenge') && percentage >= 80) {
         const levelRanks: Record<UserLevel, number> = { Beginner: 1, Intermediate: 2, Advanced: 3 };
         const unlockedLevel = currentLesson.level as UserLevel;

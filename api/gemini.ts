@@ -13,16 +13,17 @@ const lessonSchema = {
     items: {
         type: Type.OBJECT,
         properties: {
-            type: { type: Type.STRING, enum: ['MULTIPLE_CHOICE', 'TRANSLATE_TO_ENGLISH'], description: 'The type of exercise.' },
-            prompt: { type: Type.STRING, description: 'The main instruction or question for the user in English. For fill-in-the-blank, this is the instruction (e.g., "Complete the sentence").' },
-            farsiPrompt: { type: Type.STRING, description: 'The Farsi translation of the prompt.' },
-            sentence: { type: Type.STRING, description: 'For "MULTIPLE_CHOICE" fill-in-the-blank questions, this field holds the sentence with a placeholder like "___". Example: "She ___ to the market every day."' },
-            options: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'An array of strings with possible answers for MULTIPLE_CHOICE.' },
-            answer: { type: Type.STRING, description: 'The correct answer.' },
+            type: { type: Type.STRING, enum: ['MULTIPLE_CHOICE', 'TRANSLATE_TO_ENGLISH', 'LEARN'], description: 'The type of exercise.' },
+            prompt: { type: Type.STRING, description: 'The main instruction or question for the user in English. For fill-in-the-blank, this is the instruction (e.g., "Complete the sentence"). For LEARN type, this is the English word/phrase.' },
+            farsiPrompt: { type: Type.STRING, description: 'The Farsi translation of the prompt. For LEARN type, this is the Farsi translation of the word/phrase.' },
+            sentence: { type: Type.STRING, description: 'For "MULTIPLE_CHOICE" fill-in-the-blank questions or "LEARN" type, this field holds an example sentence. For fill-in-the-blank, use "___". Example: "She ___ to the market every day."' },
+            farsiSentenceExample: { type: Type.STRING, description: 'The Farsi translation of the example sentence provided in the "sentence" field for LEARN type exercises. Should be null for other types.' },
+            options: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'An array of strings with possible answers for MULTIPLE_CHOICE. Should be null/empty for other types.' },
+            answer: { type: Type.STRING, description: 'The correct answer. Should be null/empty for LEARN type.' },
             farsiSentence: { type: Type.STRING, description: 'The sentence in Farsi for translation exercises.' },
             difficulty: { type: Type.STRING, enum: ['Beginner', 'Intermediate', 'Advanced'], description: 'The difficulty level of this specific exercise.' },
         },
-        required: ['type', 'prompt', 'answer']
+        required: ['type', 'prompt']
     },
 };
 
@@ -39,20 +40,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const { topic, level } = payload;
                 const systemInstruction = `You are an expert English teacher creating learning materials for Farsi speakers. Your output MUST be a valid JSON array of exercise objects. Do not include any text or markdown formatting outside of the JSON array.`;
                 const prompt = `
-      Generate a complete, short English lesson about "${topic}" for a ${level}-level learner.
-      The lesson must be a JSON array of 5 to 7 exercises.
+      Generate a complete, structured English lesson about "${topic}" for a ${level}-level learner.
+      The lesson must be a JSON array of 10 to 14 items, combining teaching and quizzing.
       
       Follow these rules precisely:
       1.  The JSON output must be an array of objects, matching the provided schema.
-      2.  Include a mix of exercise types: 'MULTIPLE_CHOICE' and 'TRANSLATE_TO_ENGLISH'.
-      3.  All text content (prompts, options, answers) must be complete, final, and appropriate for a real lesson.
-      4.  DO NOT use any placeholders, sample text, or instructional comments like "[your text here]" or "(e.g., ...)" in any field.
-      5.  For 'MULTIPLE_CHOICE' questions that are "fill-in-the-blank" style:
-          a. The 'prompt' field should contain the instruction (e.g., "Complete the sentence", "Choose the correct verb").
-          b. The 'sentence' field MUST contain the sentence with a blank space represented by "___". For example: "He ___ a doctor."
-          c. The 'options' field should contain the words to fill the blank.
-      6.  For TRANSLATE_TO_ENGLISH, the 'farsiSentence' field must contain the Farsi text to be translated.
-      7.  Difficulty must be strictly for ${level} learners. For beginners, use simple vocabulary and grammar. For advanced, use more complex structures.
+      2.  Structure the lesson in "teach-then-test" blocks. A block consists of 1-2 'LEARN' type items followed by 2-3 'MULTIPLE_CHOICE' or 'TRANSLATE_TO_ENGLISH' items that test the concepts just introduced in the 'LEARN' items. Repeat this pattern.
+      3.  For 'LEARN' items:
+          a. 'type' MUST be 'LEARN'.
+          b. 'prompt' is the English word or phrase (e.g., "Delicious").
+          c. 'farsiPrompt' is its Farsi translation (e.g., "خوشمزه").
+          d. 'sentence' is a clear example sentence in English (e.g., "This apple is delicious.").
+          e. 'farsiSentenceExample' MUST be the direct Farsi translation of the 'sentence' (e.g., "این سیب خوشمزه است.").
+          f. 'answer' and 'options' should be empty strings or null.
+      4.  For 'MULTIPLE_CHOICE' and 'TRANSLATE_TO_ENGLISH' items, ensure they directly relate to the vocabulary or grammar from the preceding 'LEARN' items.
+      5.  For 'MULTIPLE_CHOICE' fill-in-the-blank questions:
+          a. The 'prompt' field should contain the instruction (e.g., "Complete the sentence").
+          b. The 'sentence' field MUST contain the sentence with a blank space represented by "___".
+      6.  All text content must be complete and professional. Do not use placeholders.
+      7.  Difficulty must be strictly for ${level} learners.
     `;
                 
                 const response = await ai.models.generateContent({
@@ -73,44 +79,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
                 
                 return res.status(200).json(lessonData);
-            }
-
-            case 'generatePlacementTest': {
-                const systemInstruction = `You are an expert English teacher creating a placement test for Farsi speakers. Your output MUST be a valid JSON array of exercise objects. Do not include any text or markdown formatting outside of the JSON array.`;
-                const prompt = `
-            Generate a comprehensive placement test to accurately gauge an English learner's level.
-            The test must be a JSON array of exactly 9 exercises.
-            
-            Follow these rules precisely:
-            1.  The JSON output must be an array of objects, matching the provided schema.
-            2.  Create exactly 3 'Beginner' exercises first.
-            3.  Then, create exactly 3 'Intermediate' exercises.
-            4.  Finally, create exactly 3 'Advanced' exercises.
-            5.  The 'difficulty' field for each exercise MUST be set correctly to 'Beginner', 'Intermediate', or 'Advanced'.
-            6.  Include a mix of exercise types. For 'MULTIPLE_CHOICE' questions that are "fill-in-the-blank" style:
-                a. The 'prompt' field should contain the instruction (e.g., "Complete the sentence").
-                b. The 'sentence' field MUST contain the sentence with a blank space represented by "___".
-            7.  All text content must be complete and professional. Do not use placeholders.
-        `;
-                
-                const response = await ai.models.generateContent({
-                    model: "gemini-2.5-flash",
-                    contents: prompt,
-                    config: {
-                        systemInstruction: systemInstruction,
-                        responseMimeType: "application/json",
-                        responseSchema: lessonSchema,
-                    },
-                });
-
-                const jsonText = response.text.trim();
-                const testData = JSON.parse(jsonText);
-                
-                if (!Array.isArray(testData) || testData.length !== 9) {
-                    throw new Error("Parsed placement test data is not a valid 9-exercise array.");
-                }
-                
-                return res.status(200).json(testData);
             }
 
             case 'evaluateAnswer': {

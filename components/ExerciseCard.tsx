@@ -1,7 +1,8 @@
 import React from 'react';
 import { Exercise, AnswerStatus, ExerciseType } from '../types';
-import { CheckCircleIcon, XCircleIcon } from './icons';
-
+import { CheckCircleIcon, XCircleIcon, SpeakerLoudIcon } from './icons';
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
+import { useUserProgress } from '../contexts/UserProgressContext';
 
 interface ExerciseCardProps {
   exercise: Exercise;
@@ -12,6 +13,14 @@ interface ExerciseCardProps {
 }
 
 export const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, userAnswer, onAnswerChange, answerStatus, onEnterPress }) => {
+    const { speak } = useSpeechSynthesis();
+    const { isSoundEnabled } = useUserProgress();
+    
+    const handleSpeak = (text: string) => {
+        if(isSoundEnabled) {
+            speak(text);
+        }
+    };
 
     const renderPrompt = () => (
         <div className="text-center">
@@ -22,6 +31,37 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, userAnswer
     
     const renderContent = () => {
         switch (exercise.type) {
+            case ExerciseType.LEARN:
+                return (
+                    <div className="mt-8 w-full max-w-lg text-center bg-slate-800/60 p-6 rounded-2xl border-2 border-slate-700/70">
+                        <div className="flex items-center justify-center gap-4">
+                            <h3 className="text-3xl font-bold text-indigo-400">{exercise.prompt}</h3>
+                            <button
+                                onClick={() => handleSpeak(exercise.prompt)}
+                                className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                                aria-label={`Listen to "${exercise.prompt}"`}
+                            >
+                                <SpeakerLoudIcon className="w-7 h-7 text-slate-300"/>
+                            </button>
+                        </div>
+                        <p className="text-xl text-slate-300 mt-2" style={{direction: 'rtl'}}>{exercise.farsiPrompt}</p>
+                        
+                        {exercise.sentence && (
+                            <div className="mt-6 border-t border-slate-700 pt-4 text-left">
+                                <p className="text-sm text-slate-400" style={{direction: 'rtl'}}>مثال:</p>
+                                <p className="text-lg font-semibold text-slate-200 mt-1" style={{direction: 'ltr'}}>
+                                    "{exercise.sentence}"
+                                </p>
+                                {exercise.farsiSentenceExample && (
+                                    <p className="text-md text-slate-300 mt-2" style={{direction: 'rtl'}}>
+                                        {exercise.farsiSentenceExample}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+
             case ExerciseType.MULTIPLE_CHOICE:
                 return (
                     <div className="mt-8 w-full">

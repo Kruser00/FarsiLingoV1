@@ -1,8 +1,8 @@
 
-
 export enum ExerciseType {
   MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
   TRANSLATE_TO_ENGLISH = 'TRANSLATE_TO_ENGLISH',
+  LEARN = 'LEARN',
 }
 
 export type UserLevel = 'Beginner' | 'Intermediate' | 'Advanced';
@@ -15,6 +15,7 @@ export interface Exercise {
   answer: string;
   farsiSentence?: string;
   sentence?: string; // The sentence with a blank, e.g., "She ___ to the store."
+  farsiSentenceExample?: string; // The farsi translation of the example sentence for LEARN type
   difficulty?: UserLevel;
 }
 
@@ -29,4 +30,5 @@ export interface UserProgress {
     lastAdRewardTimestamp: number; // UTC timestamp ms
     userLevel: UserLevel | null;
     isSoundEnabled: boolean;
+    completedLessons: string[];
 }
