@@ -40,7 +40,7 @@ const AdRewardButton: React.FC = () => {
         } catch (error) {
             console.error("Ad error:", error);
             const errorMessage = error instanceof Error ? error.message : String(error);
-            alert(`مشکلی در نمایش تبلیغ به وجود آمد. لطفا دوباره تلاش کنید.\n\nخطا: ${errorMessage}`);
+            alert(errorMessage);
         } finally {
             setIsWatchingAd(false);
         }

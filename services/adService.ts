@@ -31,6 +31,7 @@ const ADIVERY_APP_ID = 'fd86f445-b8f8-4177-bec6-dcb50dd68f15';
 const REWARDED_VIDEO_PLACEMENT_ID = '2fa75852-230b-4e10-9f10-4bad0e8b4206';
 
 let isRequestInProgress = false;
+let isConfigured = false;
 
 // A memoized promise to ensure we only try to initialize the SDK once.
 let adiveryInitializationPromise: Promise<void> | null = null;
@@ -57,15 +58,21 @@ const ensureAdiveryIsReady = (): Promise<void> => {
             // If the SDK is now available on the window object...
             if (typeof window.Adivery !== 'undefined' && window.Adivery.configure) {
                 clearInterval(intervalId);
-                try {
-                    // Configure the SDK. This is safe to call multiple times.
-                    window.Adivery.configure(ADIVERY_APP_ID);
-                    console.log("Adivery SDK initialized and configured.");
-                    resolve();
-                } catch (e) {
-                    console.error("Adivery SDK is present but configuration failed.", e);
-                    reject(new Error("Ad service configuration failed."));
+                if (!isConfigured) {
+                    try {
+                        // Configure the SDK. This should only be called once.
+                        window.Adivery.configure(ADIVERY_APP_ID);
+                        isConfigured = true;
+                        console.log("Adivery SDK configured.");
+                    } catch (e) {
+                        console.error("Adivery SDK is present but configuration failed.", e);
+                        // Reset the promise to allow for future retries if config fails.
+                        adiveryInitializationPromise = null;
+                        reject(new Error("Ad service configuration failed."));
+                        return;
+                    }
                 }
+                resolve();
                 return;
             }
 
@@ -124,9 +131,17 @@ export const showRewardedVideo = async (): Promise<boolean> => {
 
     } catch (error: any) {
         console.error("Adivery ad error:", error);
-        // Provide a more generic error message to the user.
-        // The detailed error is logged to the console for debugging.
-        throw new Error(`Could not display the ad. Please try again later.`);
+        
+        const errorMessage = (error?.message || String(error)).toLowerCase();
+
+        if (errorMessage.includes('no fill')) {
+            // This is a common, non-critical error. Inform the user gracefully.
+            throw new Error("در حال حاضر تبلیغی برای نمایش وجود ندارد. لطفاً چند دقیقه دیگر دوباره امتحان کنید.");
+        }
+        
+        // For all other errors, use a more generic message.
+        throw new Error("مشکلی در نمایش تبلیغ رخ داد. لطفا اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.");
+
     } finally {
         // Ensure the lock is released, whether the ad succeeds or fails.
         isRequestInProgress = false;
