@@ -21,7 +21,7 @@ export const pregeneratedLessons: Record<string, Exercise[][]> = {
       { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Which of these is a vowel?', farsiPrompt: 'کدام یک از اینها حرف صدادار است؟', options: ['T', 'S', 'A', 'P'], answer: 'A', difficulty: 'Beginner' },
       { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'What is the last letter of the English alphabet?', farsiPrompt: 'آخرین حرف الفبای انگلیسی چیست؟', options: ['X', 'Y', 'Z', 'A'], answer: 'Z', difficulty: 'Beginner' },
       { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'How do you spell "cat"?', farsiPrompt: 'چطور "cat" را هجی میکنید؟', options: ['K-A-T', 'C-A-T', 'C-A-P', 'D-O-G'], answer: 'C-A-T', difficulty: 'Beginner' },
-      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Which letter is missing: A, B, C, _, E', farsiPrompt: 'کدام حرف جا افتاده است: A, B, C, _, E', options: ['G', 'F', 'D', 'H'], answer: 'D', difficulty: 'Beginner' }
+      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Which letter is missing?', farsiPrompt: 'کدام حرف جا افتاده است؟', sentence: 'A, B, C, ___, E', options: ['G', 'F', 'D', 'H'], answer: 'D', difficulty: 'Beginner' }
     ]
   ],
   "Numbers": [
@@ -228,7 +228,7 @@ export const pregeneratedLessons: Record<string, Exercise[][]> = {
     [
       { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'What do you say to get the waiter\'s attention?', farsiPrompt: 'برای جلب توجه پیشخدمت چه می گویید؟', options: ['Hey you!', 'Excuse me!', 'Listen!', 'Come here!'], answer: 'Excuse me!', difficulty: 'Intermediate' },
       { type: ExerciseType.TRANSLATE_TO_ENGLISH, prompt: 'Translate to English.', farsiPrompt: 'به انگلیسی ترجمه کنید.', farsiSentence: 'آیا می توانم منو را ببینم، لطفا؟', answer: 'Can I see the menu, please?', difficulty: 'Intermediate' },
-      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Complete the sentence: "I would like to ___ the steak."', farsiPrompt: 'جمله را کامل کنید: "من می خواهم استیک ___ ."', options: ['eat', 'have', 'order', 'see'], answer: 'order', difficulty: 'Intermediate' },
+      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Complete the sentence.', farsiPrompt: 'جمله را کامل کنید.', sentence: 'I would like to ___ the steak.', options: ['eat', 'have', 'order', 'see'], answer: 'order', difficulty: 'Intermediate' },
       { type: ExerciseType.TRANSLATE_TO_ENGLISH, prompt: 'Translate to English.', farsiPrompt: 'به انگلیسی ترجمه کنید.', farsiSentence: 'آیا انعام در صورتحساب لحاظ شده است؟', answer: 'Is the tip included in the bill?', difficulty: 'Intermediate' },
       { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'What is an "appetizer"?', farsiPrompt: '"پیش غذا" چیست؟', options: ['The main dish', 'A small dish before the main course', 'A type of drink', 'The dessert'], answer: 'A small dish before the main course', difficulty: 'Intermediate' }
     ]
@@ -289,11 +289,11 @@ export const pregeneratedLessons: Record<string, Exercise[][]> = {
   ],
   "Past and Future Tenses": [
     [
-      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Complete the sentence: "Yesterday, I ___ to the park."', farsiPrompt: 'جمله را کامل کنید: "دیروز، من به پارک ___ ."', options: ['go', 'will go', 'went', 'am going'], answer: 'went', difficulty: 'Intermediate' },
+      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Complete the sentence.', farsiPrompt: 'جمله را کامل کنید.', sentence: 'Yesterday, I ___ to the park.', options: ['go', 'will go', 'went', 'am going'], answer: 'went', difficulty: 'Intermediate' },
       { type: ExerciseType.TRANSLATE_TO_ENGLISH, prompt: 'Translate to English.', farsiPrompt: 'به انگلیسی ترجمه کنید.', farsiSentence: 'فردا ما به دیدن پدربزرگ و مادربزرگمان خواهیم رفت.', answer: 'Tomorrow we will visit our grandparents.', difficulty: 'Intermediate' },
-      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Choose the correct form: "She ___ not seen the movie yet."', farsiPrompt: 'شکل صحیح را انتخاب کنید: "او هنوز فیلم را ندیده است."', options: ['has', 'have', 'is', 'was'], answer: 'has', difficulty: 'Intermediate' },
+      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Choose the correct form.', farsiPrompt: 'شکل صحیح را انتخاب کنید.', sentence: 'She ___ not seen the movie yet.', options: ['has', 'have', 'is', 'was'], answer: 'has', difficulty: 'Intermediate' },
       { type: ExerciseType.TRANSLATE_TO_ENGLISH, prompt: 'Translate to English.', farsiPrompt: 'به انگلیسی ترجمه کنید.', farsiSentence: 'من داشتم درس می خواندم که شما زنگ زدید.', answer: 'I was studying when you called.', difficulty: 'Intermediate' },
-      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Complete the sentence: "By this time next year, I ___ my degree."', farsiPrompt: 'جمله را کامل کنید: "تا این موقع سال آینده، من مدرکم را ___ ."', options: ['will have finished', 'finish', 'am finishing', 'finished'], answer: 'will have finished', difficulty: 'Intermediate' }
+      { type: ExerciseType.MULTIPLE_CHOICE, prompt: 'Complete the sentence.', farsiPrompt: 'جمله را کامل کنید.', sentence: 'By this time next year, I ___ my degree.', options: ['will have finished', 'finish', 'am finishing', 'finished'], answer: 'will have finished', difficulty: 'Intermediate' }
     ]
   ]
 };

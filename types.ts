@@ -14,6 +14,7 @@ export interface Exercise {
   options?: string[];
   answer: string;
   farsiSentence?: string;
+  sentence?: string; // The sentence with a blank, e.g., "She ___ to the store."
   difficulty?: UserLevel;
 }
 

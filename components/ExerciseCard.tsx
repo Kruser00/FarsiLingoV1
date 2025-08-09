@@ -24,35 +24,44 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, userAnswer
         switch (exercise.type) {
             case ExerciseType.MULTIPLE_CHOICE:
                 return (
-                    <div className="mt-8 w-full space-y-3">
-                        {exercise.options?.map((option, index) => {
-                             const isSelected = userAnswer === option;
-                             const isCorrect = exercise.answer === option;
-                             let buttonClass = "bg-slate-800/60 hover:bg-slate-700/80 text-slate-200";
+                    <div className="mt-8 w-full">
+                        {exercise.sentence && (
+                            <div className="p-4 bg-slate-800/70 rounded-xl text-center mb-4">
+                                <p className="text-xl font-semibold text-slate-200 tracking-wider" style={{direction: 'ltr'}}>
+                                    {exercise.sentence.replace(/___/g, '______')}
+                                </p>
+                            </div>
+                        )}
+                        <div className="space-y-3">
+                            {exercise.options?.map((option, index) => {
+                                 const isSelected = userAnswer === option;
+                                 const isCorrect = exercise.answer === option;
+                                 let buttonClass = "bg-slate-800/60 hover:bg-slate-700/80 text-slate-200";
 
-                             if (answerStatus !== 'UNANSWERED' && isSelected) {
-                                 buttonClass = isCorrect ? "bg-teal-900/70 border-teal-500 text-teal-300" : "bg-rose-900/70 border-rose-500 text-rose-300";
-                             } else if (answerStatus !== 'UNANSWERED' && isCorrect) {
-                                 buttonClass = "bg-teal-900/70 border-teal-500 text-teal-300";
-                             }
-                             
-                             return (
-                                <button
-                                    key={index}
-                                    onClick={() => onAnswerChange(option)}
-                                    disabled={answerStatus !== 'UNANSWERED'}
-                                    className={`w-full p-4 rounded-xl border-2 text-lg font-semibold transition-all duration-200 flex items-center justify-between
-                                        ${isSelected ? 'border-indigo-500' : 'border-slate-700/70'}
-                                        ${buttonClass}
-                                        ${answerStatus !== 'UNANSWERED' ? 'cursor-not-allowed' : ''}
-                                    `}
-                                >
-                                    {option}
-                                    {answerStatus !== 'UNANSWERED' && isCorrect && <CheckCircleIcon className="w-6 h-6 text-teal-400" />}
-                                    {answerStatus !== 'UNANSWERED' && isSelected && !isCorrect && <XCircleIcon className="w-6 h-6 text-rose-400" />}
-                                </button>
-                             );
-                        })}
+                                 if (answerStatus !== 'UNANSWERED' && isSelected) {
+                                     buttonClass = isCorrect ? "bg-teal-900/70 border-teal-500 text-teal-300" : "bg-rose-900/70 border-rose-500 text-rose-300";
+                                 } else if (answerStatus !== 'UNANSWERED' && isCorrect) {
+                                     buttonClass = "bg-teal-900/70 border-teal-500 text-teal-300";
+                                 }
+                                 
+                                 return (
+                                    <button
+                                        key={index}
+                                        onClick={() => onAnswerChange(option)}
+                                        disabled={answerStatus !== 'UNANSWERED'}
+                                        className={`w-full p-4 rounded-xl border-2 text-lg font-semibold transition-all duration-200 flex items-center justify-between
+                                            ${isSelected ? 'border-indigo-500' : 'border-slate-700/70'}
+                                            ${buttonClass}
+                                            ${answerStatus !== 'UNANSWERED' ? 'cursor-not-allowed' : ''}
+                                        `}
+                                    >
+                                        {option}
+                                        {answerStatus !== 'UNANSWERED' && isCorrect && <CheckCircleIcon className="w-6 h-6 text-teal-400" />}
+                                        {answerStatus !== 'UNANSWERED' && isSelected && !isCorrect && <XCircleIcon className="w-6 h-6 text-rose-400" />}
+                                    </button>
+                                 );
+                            })}
+                        </div>
                     </div>
                 );
             
