@@ -9,9 +9,22 @@ import ChooseLevelScreen from './components/ChooseLevelScreen';
 import { Header } from './components/Header';
 import { AppView, UserLevel } from './types';
 import { UserProgressProvider, useUserProgress } from './contexts/UserProgressContext';
+import InfoModal from './components/InfoModal';
+import ConfirmationModal from './components/ConfirmationModal';
+import AnimatedBackground from './components/AnimatedBackground';
 
 const AppContent: React.FC = () => {
-  const { userLevel, setUserLevel, updateStreak, addGems, hearts } = useUserProgress();
+  const { 
+    userLevel, 
+    setUserLevel, 
+    updateStreak, 
+    addGems, 
+    hearts, 
+    infoModal, 
+    hideInfoModal,
+    confirmationModal,
+    hideConfirmationModal
+  } = useUserProgress();
 
   // Set the initial view based on whether a user level is already stored.
   // This ensures the start screen is only shown on the first visit.
@@ -139,14 +152,35 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-800 dark:text-slate-200 flex flex-col items-center p-4 selection:bg-purple-400/50">
-      <div className="w-full max-w-2xl mx-auto">
-        <Header onHomeClick={currentView === 'HOME' || !userLevel ? goToStart : goHome} showHomeButton={currentView !== 'START' && !!userLevel} />
-        <main className="mt-8">
-          {renderContent()}
-        </main>
+    <>
+      <AnimatedBackground />
+      <div className="min-h-screen bg-transparent text-slate-800 dark:text-slate-200 flex flex-col items-center p-4 selection:bg-purple-400/50">
+        <div className="w-full max-w-2xl mx-auto">
+          <Header onHomeClick={currentView === 'HOME' || !userLevel ? goToStart : goHome} showHomeButton={currentView !== 'START' && !!userLevel} />
+          <main className="mt-8">
+            {renderContent()}
+          </main>
+        </div>
       </div>
-    </div>
+      <InfoModal
+        isOpen={infoModal.isOpen}
+        title={infoModal.title}
+        message={infoModal.message}
+        onClose={hideInfoModal}
+      />
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        title={confirmationModal.title}
+        message={confirmationModal.message}
+        onConfirm={() => {
+            confirmationModal.onConfirm();
+            hideConfirmationModal();
+        }}
+        onClose={hideConfirmationModal}
+        confirmText={confirmationModal.confirmText}
+        cancelText={confirmationModal.cancelText}
+      />
+    </>
   );
 };
 

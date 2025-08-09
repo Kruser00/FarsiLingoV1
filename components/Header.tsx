@@ -8,7 +8,7 @@ const AD_REWARD_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 const GEMS_FROM_AD = 15;
 
 const AdRewardButton: React.FC = () => {
-    const { addGemsFromAd, lastAdRewardTimestamp, isSoundEnabled } = useUserProgress();
+    const { addGemsFromAd, lastAdRewardTimestamp, isSoundEnabled, showInfoModal, showConfirmationModal } = useUserProgress();
     const [cooldownTime, setCooldownTime] = useState(0);
     const [isWatchingAd, setIsWatchingAd] = useState(false);
 
@@ -25,53 +25,61 @@ const AdRewardButton: React.FC = () => {
         return () => clearInterval(interval);
     }, [lastAdRewardTimestamp]);
 
-    const handleWatchAd = async () => {
+    const handleWatchAd = () => {
         if (cooldownTime > 0 || isWatchingAd) return;
         
         playButtonClickSound(isSoundEnabled);
-        setIsWatchingAd(true);
-        try {
-            const rewarded = await showRewardedVideo();
-            if (rewarded) {
-                addGemsFromAd(GEMS_FROM_AD);
-            } else {
-                alert('شما برای دریافت جایزه باید ویدیو را تا انتها تماشا کنید.');
+        showConfirmationModal({
+            title: 'دریافت جایزه با تماشای ویدیو',
+            message: `برای دریافت ${GEMS_FROM_AD} الماس، باید ویدیو را تا انتها تماشا کنید. آیا مایل به ادامه هستید؟`,
+            confirmText: 'بله، تماشا می‌کنم',
+            cancelText: 'نه، ممنون',
+            onConfirm: async () => {
+                setIsWatchingAd(true);
+                try {
+                    const rewarded = await showRewardedVideo();
+                    if (rewarded) {
+                        addGemsFromAd(GEMS_FROM_AD);
+                    } else {
+                        showInfoModal('جایزه دریافت نشد', 'شما برای دریافت جایزه باید ویدیو را تا انتها تماشا کنید.');
+                    }
+                } catch (error) {
+                    console.error("Ad error:", error);
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    showInfoModal('خطا در تبلیغ', errorMessage);
+                } finally {
+                    setIsWatchingAd(false);
+                }
             }
-        } catch (error) {
-            console.error("Ad error:", error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            alert(errorMessage);
-        } finally {
-            setIsWatchingAd(false);
-        }
+        });
     };
 
     const minutes = Math.floor(cooldownTime / 60000);
     const seconds = Math.floor((cooldownTime % 60000) / 1000).toString().padStart(2, '0');
 
     const isDisabled = cooldownTime > 0 || isWatchingAd;
-    const buttonText = isWatchingAd ? 'در حال بارگذاری...' : cooldownTime > 0 ? `${minutes}:${seconds}` : `+${GEMS_FROM_AD}`;
+    const buttonText = isWatchingAd ? '...' : cooldownTime > 0 ? `${minutes}:${seconds}` : `+${GEMS_FROM_AD}`;
 
     return (
         <button
             onClick={handleWatchAd}
             disabled={isDisabled}
-            className="flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/50 text-slate-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-slate-700/80"
+            className="flex items-center gap-1.5 p-1.5 md:p-2 rounded-lg bg-slate-800/50 text-slate-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-slate-700/80"
             aria-label={isDisabled ? `جایزه در ${minutes}:${seconds} در دسترس است` : `مشاهده تبلیغ برای ${GEMS_FROM_AD} الماس`}
         >
             <div className={cooldownTime > 0 ? "text-slate-400" : "text-teal-400"}>
                 {cooldownTime > 0 ? <ClockIcon className="w-5 h-5" /> : <GiftIcon className="w-5 h-5" />}
             </div>
-            <span className="font-bold text-md min-w-[50px] text-center">{buttonText}</span>
+            <span className="font-bold text-sm md:text-md md:min-w-[50px] text-center">{buttonText}</span>
         </button>
     );
 };
 
 
 const StatItem: React.FC<{ icon: React.ReactNode; value: number | string; colorClass: string; }> = ({ icon, value, colorClass }) => (
-    <div className={`flex items-center gap-1.5 p-2 rounded-lg bg-slate-800/50`}>
+    <div className={`flex items-center gap-1 p-1.5 md:p-2 rounded-lg bg-slate-800/50`}>
         <div className={colorClass}>{icon}</div>
-        <span className="font-bold text-slate-200 text-md">{value}</span>
+        <span className="font-bold text-slate-200 text-sm md:text-md">{value}</span>
     </div>
 );
 
@@ -85,7 +93,7 @@ export const Header: React.FC<{ onHomeClick: () => void; showHomeButton: boolean
 
     return (
         <header className="w-full flex items-center justify-between p-2 rounded-2xl bg-slate-900/60 backdrop-blur-sm border border-slate-700/50 shadow-md sticky top-4 z-40">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
                 {showHomeButton && (
                     <button onClick={onHomeClick} className="p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Home">
                         <HomeIcon className="w-7 h-7 text-slate-300" />
@@ -97,7 +105,7 @@ export const Header: React.FC<{ onHomeClick: () => void; showHomeButton: boolean
             </div>
             
             {userLevel && (
-                <div className="flex items-center gap-2 md:gap-3">
+                <div className="flex items-center gap-1 md:gap-2">
                     <AdRewardButton />
                     <StatItem icon={<GemIcon className="w-5 h-5" />} value={gems} colorClass="text-sky-400" />
                     <StatItem icon={<FlameIcon className="w-5 h-5" />} value={streak} colorClass="text-orange-400" />

@@ -1,8 +1,6 @@
 {
   "name": "FarsiLingoV1: Learn English",
-  "description": "An interactive application for Farsi speakers to learn English through lessons, quizzes, listening, and speaking exercises, powered by AI.",
-  "requestFramePermissions": [
-    "microphone"
-  ],
+  "description": "An interactive application for Farsi speakers to learn English through lessons, quizzes, and translation exercises, powered by AI.",
+  "requestFramePermissions": [],
   "prompt": ""
 }

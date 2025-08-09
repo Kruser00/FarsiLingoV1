@@ -47,15 +47,15 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
     fetchLesson();
   }, [topic, level]);
 
-  const handleCheckAnswer = useCallback(async (spokenAnswer?: string) => {
-    const answerToCheck = spokenAnswer ?? userAnswer;
+  const handleCheckAnswer = useCallback(async () => {
+    const answerToCheck = userAnswer;
     if (answerStatus !== 'UNANSWERED' || !answerToCheck.trim() || isCheckingAnswer) return;
     
     setIsCheckingAnswer(true);
     const currentExercise = exercises[currentIndex];
     const { type, answer } = currentExercise;
 
-    const typesForLenientCheck: ExerciseType[] = [ExerciseType.TRANSLATE_TO_ENGLISH, ExerciseType.LISTENING, ExerciseType.SPEAKING];
+    const typesForLenientCheck: ExerciseType[] = [ExerciseType.TRANSLATE_TO_ENGLISH];
     let isCorrect = false;
 
     try {

@@ -18,6 +18,31 @@ const levelRanks: Record<UserLevel, number> = {
   Advanced: 3,
 };
 
+const LevelProgress: React.FC = () => {
+    const { level, xp, xpForCurrentLevel, xpForNextLevel } = useUserProgress();
+    
+    const xpInCurrentLevel = xp - xpForCurrentLevel;
+    const xpNeededForNextLevel = xpForNextLevel - xpForCurrentLevel;
+    const progressPercentage = xpNeededForNextLevel > 0 ? (xpInCurrentLevel / xpNeededForNextLevel) * 100 : 100;
+
+    return (
+        <div className="w-full bg-slate-800/50 border border-slate-700/50 p-4 rounded-xl mb-8">
+            <div className="flex justify-between items-center mb-2">
+                <span className="font-bold text-lg text-indigo-400">سطح {level}</span>
+                <span className="text-sm font-semibold text-slate-300" style={{direction: 'rtl'}}>
+                    {xpInCurrentLevel.toLocaleString()} / {xpNeededForNextLevel.toLocaleString()} XP
+                </span>
+            </div>
+            <div className="w-full bg-slate-700/70 rounded-full h-3">
+                <div
+                    className="bg-indigo-500 h-3 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${progressPercentage}%` }}
+                ></div>
+            </div>
+        </div>
+    );
+};
+
 const difficultyLevels = [
   {
     level: 'Beginner',
@@ -107,12 +132,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartLesson, userLevel, showN
   return (
     <div className="text-center">
       <NoHeartsModal isOpen={showNoHeartsModal} onClose={() => setShowNoHeartsModal(false)} />
+      
+      {userLevel && <LevelProgress />}
+
       <h2 className="text-2xl font-bold mb-2 text-slate-100" style={{ direction: 'rtl' }}>
         {userLevel ? `مسیر یادگیری شما` : 'یک درس را انتخاب کنید'}
       </h2>
       <p className="text-lg mb-8 text-slate-300" style={{ direction: 'rtl' }}>
         برای شروع، یک موضوع را از یک سطح باز انتخاب کنید.
       </p>
+
       <div className="space-y-8">
         {difficultyLevels.map((level) => {
           const currentRank = levelRanks[level.level as UserLevel];

@@ -13,7 +13,7 @@ const lessonSchema = {
     items: {
         type: Type.OBJECT,
         properties: {
-            type: { type: Type.STRING, enum: ['MULTIPLE_CHOICE', 'TRANSLATE_TO_ENGLISH', 'LISTENING', 'SPEAKING'], description: 'The type of exercise.' },
+            type: { type: Type.STRING, enum: ['MULTIPLE_CHOICE', 'TRANSLATE_TO_ENGLISH'], description: 'The type of exercise.' },
             prompt: { type: Type.STRING, description: 'The main instruction or question for the user in English.' },
             farsiPrompt: { type: Type.STRING, description: 'The Farsi translation of the prompt.' },
             options: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'An array of strings with possible answers for MULTIPLE_CHOICE.' },
@@ -43,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       Follow these rules precisely:
       1.  The JSON output must be an array of objects, matching the provided schema.
-      2.  Include a mix of exercise types: 'MULTIPLE_CHOICE', 'TRANSLATE_TO_ENGLISH', 'LISTENING', and 'SPEAKING'.
+      2.  Include a mix of exercise types: 'MULTIPLE_CHOICE' and 'TRANSLATE_TO_ENGLISH'.
       3.  All text content (prompts, options, answers) must be complete, final, and appropriate for a real lesson.
       4.  DO NOT use any placeholders, sample text, or instructional comments like "[your text here]" or "(e.g., ...)" in any field.
       5.  For MULTIPLE_CHOICE, provide 3-4 distinct options.
@@ -83,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             3.  Then, create exactly 3 'Intermediate' exercises.
             4.  Finally, create exactly 3 'Advanced' exercises.
             5.  The 'difficulty' field for each exercise MUST be set correctly to 'Beginner', 'Intermediate', or 'Advanced'.
-            6.  Include a mix of exercise types: 'MULTIPLE_CHOICE', 'TRANSLATE_TO_ENGLISH', 'LISTENING', and 'SPEAKING'.
+            6.  Include a mix of exercise types: 'MULTIPLE_CHOICE' and 'TRANSLATE_TO_ENGLISH'.
             7.  All text content must be complete and professional. Do not use placeholders.
         `;
                 

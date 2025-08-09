@@ -3,8 +3,6 @@
 export enum ExerciseType {
   MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
   TRANSLATE_TO_ENGLISH = 'TRANSLATE_TO_ENGLISH',
-  LISTENING = 'LISTENING',
-  SPEAKING = 'SPEAKING',
 }
 
 export type UserLevel = 'Beginner' | 'Intermediate' | 'Advanced';
@@ -24,6 +22,7 @@ export type AnswerStatus = 'UNANSWERED' | 'CORRECT' | 'INCORRECT';
 
 export interface UserProgress {
     xp: number;
+    level: number;
     gems: number;
     hearts: number;
     streak: number;

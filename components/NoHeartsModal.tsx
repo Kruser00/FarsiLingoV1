@@ -13,7 +13,7 @@ interface NoHeartsModalProps {
 }
 
 const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
-    const { gems, refillHeartsWithGems, refillHeartsWithAd, lastAdRewardTimestamp, isSoundEnabled } = useUserProgress();
+    const { gems, refillHeartsWithGems, refillHeartsWithAd, lastAdRewardTimestamp, isSoundEnabled, showInfoModal, showConfirmationModal } = useUserProgress();
     const [isShowingAd, setIsShowingAd] = useState(false);
     const [cooldownTime, setCooldownTime] = useState(0);
 
@@ -38,29 +38,38 @@ const NoHeartsModal: React.FC<NoHeartsModalProps> = ({ isOpen, onClose }) => {
         if (success) {
             onClose();
         } else {
-            alert('شما به اندازه کافی الماس ندارید!');
+            showInfoModal('الماس کافی نیست', 'شما برای پر کردن قلب های خود به الماس بیشتری نیاز دارید.');
         }
     }
 
-    const handleAdRefill = async () => {
+    const handleAdRefill = () => {
         if (isShowingAd || cooldownTime > 0) return;
         playButtonClickSound(isSoundEnabled);
-        setIsShowingAd(true);
-        try {
-            const rewarded = await showRewardedVideo();
-            if (rewarded) {
-                refillHeartsWithAd();
-                onClose();
-            } else {
-                alert('شما برای دریافت قلب باید ویدیو را تا انتها تماشا کنید.');
+
+        showConfirmationModal({
+            title: 'دریافت قلب با تماشای ویدیو',
+            message: 'برای پر کردن تمام قلب‌های خود، باید ویدیو را تا انتها تماشا کنید. آیا مایل به ادامه هستید؟',
+            confirmText: 'بله، تماشا می‌کنم',
+            cancelText: 'نه، ممنون',
+            onConfirm: async () => {
+                setIsShowingAd(true);
+                try {
+                    const rewarded = await showRewardedVideo();
+                    if (rewarded) {
+                        refillHeartsWithAd();
+                        onClose();
+                    } else {
+                        showInfoModal('جایزه دریافت نشد', 'برای دریافت قلب باید ویدیو را تا انتها تماشا کنید. لطفاً دوباره تلاش کنید.');
+                    }
+                } catch (error) {
+                    console.error("Ad error:", error);
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    showInfoModal('خطا در تبلیغ', errorMessage);
+                } finally {
+                    setIsShowingAd(false);
+                }
             }
-        } catch (error) {
-            console.error("Ad error:", error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            alert(errorMessage);
-        } finally {
-            setIsShowingAd(false);
-        }
+        });
     };
 
     const minutes = Math.floor(cooldownTime / 60000);

@@ -7,7 +7,42 @@ const GEMS_FOR_REFILL = 50;
 
 const STORAGE_KEY = 'farsilingo_user_progress';
 
+// XP and Leveling constants
+const XP_BASE = 100;
+const XP_GROWTH_RATE = 1.5;
+
+// --- Level Calculation ---
+// Calculates the total XP required to reach a specific level.
+const getXpForLevel = (level: number): number => {
+    if (level <= 1) return 0;
+    return Math.floor(XP_BASE * Math.pow(level - 1, XP_GROWTH_RATE));
+};
+
+// Calculates the user's current level based on their total XP.
+const getLevelForXp = (xp: number): number => {
+    if (xp < XP_BASE) return 1;
+    // Reverse the formula: level = (xp / base)^(1/growth) + 1
+    return Math.floor(Math.pow(xp / XP_BASE, 1 / XP_GROWTH_RATE)) + 1;
+};
+
+interface InfoModalState {
+    isOpen: boolean;
+    title: string;
+    message: string;
+}
+
+interface ConfirmationModalState {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText?: string;
+    cancelText?: string;
+}
+
 interface UserProgressContextType extends UserProgress {
+    xpForCurrentLevel: number;
+    xpForNextLevel: number;
     setUserLevel: (level: UserLevel) => void;
     addXp: (amount: number) => void;
     loseHeart: () => void;
@@ -17,12 +52,19 @@ interface UserProgressContextType extends UserProgress {
     refillHeartsWithAd: () => void;
     addGemsFromAd: (amount: number) => void;
     toggleSound: () => void;
+    infoModal: InfoModalState;
+    confirmationModal: ConfirmationModalState;
+    showInfoModal: (title: string, message: string) => void;
+    hideInfoModal: () => void;
+    showConfirmationModal: (config: Omit<ConfirmationModalState, 'isOpen'>) => void;
+    hideConfirmationModal: () => void;
 }
 
 const UserProgressContext = createContext<UserProgressContextType | undefined>(undefined);
 
 const getDefaultProgress = (): UserProgress => ({
     xp: 0,
+    level: 1,
     gems: 0,
     hearts: MAX_HEARTS,
     streak: 0,
@@ -30,7 +72,7 @@ const getDefaultProgress = (): UserProgress => ({
     lastHeartRefillTimestamp: Date.now(),
     lastAdRewardTimestamp: 0,
     userLevel: null,
-    isSoundEnabled: true, // Sounds are on by default
+    isSoundEnabled: true,
 });
 
 export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -39,8 +81,9 @@ export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ childr
             const storedProgress = localStorage.getItem(STORAGE_KEY);
             if (storedProgress) {
                 const parsed = JSON.parse(storedProgress);
-                // Ensure isSoundEnabled has a default value if loading from old state
-                return { ...getDefaultProgress(), ...parsed };
+                // Recalculate level on load in case the formula changes
+                const level = getLevelForXp(parsed.xp || 0);
+                return { ...getDefaultProgress(), ...parsed, level };
             }
             return getDefaultProgress();
         } catch (error) {
@@ -48,6 +91,9 @@ export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ childr
             return getDefaultProgress();
         }
     });
+    
+    const [infoModal, setInfoModal] = useState<InfoModalState>({ isOpen: false, title: '', message: '' });
+    const [confirmationModal, setConfirmationModal] = useState<ConfirmationModalState>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
     useEffect(() => {
         // This effect runs on initial load to handle timed heart refills.
@@ -75,13 +121,34 @@ export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ childr
             console.error("Failed to save user progress to localStorage", error);
         }
     }, [progress]);
+    
+    const showInfoModal = useCallback((title: string, message: string) => {
+        setInfoModal({ isOpen: true, title, message });
+    }, []);
+
+    const hideInfoModal = useCallback(() => {
+        setInfoModal(prev => ({ ...prev, isOpen: false }));
+    }, []);
+
+    const showConfirmationModal = useCallback((config: Omit<ConfirmationModalState, 'isOpen'>) => {
+        setConfirmationModal({ ...config, isOpen: true });
+    }, []);
+
+    const hideConfirmationModal = useCallback(() => {
+        setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+    }, []);
+
 
     const setUserLevel = useCallback((level: UserLevel) => {
         setProgress(prev => ({ ...prev, userLevel: level }));
     }, []);
 
     const addXp = useCallback((amount: number) => {
-        setProgress(prev => ({ ...prev, xp: prev.xp + amount }));
+        setProgress(prev => {
+            const newXp = prev.xp + amount;
+            const newLevel = getLevelForXp(newXp);
+            return { ...prev, xp: newXp, level: newLevel };
+        });
     }, []);
 
     const loseHeart = useCallback(() => {
@@ -150,10 +217,32 @@ export const UserProgressProvider: React.FC<{ children: ReactNode }> = ({ childr
     const toggleSound = useCallback(() => {
         setProgress(prev => ({ ...prev, isSoundEnabled: !prev.isSoundEnabled }));
     }, []);
+    
+    const xpForCurrentLevel = getXpForLevel(progress.level);
+    const xpForNextLevel = getXpForLevel(progress.level + 1);
 
 
     return (
-        <UserProgressContext.Provider value={{ ...progress, setUserLevel, addXp, loseHeart, updateStreak, addGems, refillHeartsWithGems, refillHeartsWithAd, addGemsFromAd, toggleSound }}>
+        <UserProgressContext.Provider value={{ 
+            ...progress, 
+            xpForCurrentLevel, 
+            xpForNextLevel, 
+            setUserLevel, 
+            addXp, 
+            loseHeart, 
+            updateStreak, 
+            addGems, 
+            refillHeartsWithGems, 
+            refillHeartsWithAd, 
+            addGemsFromAd, 
+            toggleSound,
+            infoModal,
+            confirmationModal,
+            showInfoModal,
+            hideInfoModal,
+            showConfirmationModal,
+            hideConfirmationModal
+        }}>
             {children}
         </UserProgressContext.Provider>
     );

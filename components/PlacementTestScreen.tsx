@@ -59,15 +59,15 @@ const PlacementTestScreen: React.FC<PlacementTestScreenProps> = ({ onFinish, onG
     fetchTest();
   }, []);
 
-  const handleCheckAnswer = useCallback(async (spokenAnswer?: string) => {
-    const answerToCheck = spokenAnswer ?? userAnswer;
+  const handleCheckAnswer = useCallback(async () => {
+    const answerToCheck = userAnswer;
     if (answerStatus !== 'UNANSWERED' || !answerToCheck.trim() || isCheckingAnswer) return;
     
     setIsCheckingAnswer(true);
     const currentExercise = exercises[currentIndex];
     const { type, answer, difficulty } = currentExercise;
 
-    const typesForLenientCheck: ExerciseType[] = [ExerciseType.TRANSLATE_TO_ENGLISH, ExerciseType.LISTENING, ExerciseType.SPEAKING];
+    const typesForLenientCheck: ExerciseType[] = [ExerciseType.TRANSLATE_TO_ENGLISH];
     let isCorrect = false;
 
     try {
