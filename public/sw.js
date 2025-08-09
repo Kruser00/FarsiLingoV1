@@ -1,11 +1,14 @@
-const CACHE_NAME = 'farsilingo-cache-v3';
+const CACHE_NAME = 'farsilingo-cache-v4';
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
   '/icon.svg',
-  '/icon-192x192.png',
-  '/icon-512x512.png',
+  '/sounds/correct.mp3',
+  '/sounds/incorrect.mp3',
+  '/sounds/heart-lost.mp3',
+  '/sounds/lesson-complete.mp3',
+  '/sounds/click.mp3',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap'
 ];
@@ -18,8 +21,19 @@ self.addEventListener('install', event => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
+      .then(() => {
+        // Force the waiting service worker to become the active service worker.
+        return self.skipWaiting();
+      })
   );
 });
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 
 self.addEventListener('fetch', event => {
   // We only want to handle GET requests in the service worker.

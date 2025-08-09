@@ -2,7 +2,7 @@ import React from 'react';
 import { BookOpenIcon, UtensilsIcon, PlaneIcon, ShoppingCartIcon, UsersIcon, CalendarIcon, BriefcaseIcon, UserIcon, CalendarDaysIcon, HeartIcon, MapPinIcon, MessageSquareIcon, LockIcon, ClockIcon, HelpCircleIcon, ArchiveIcon, CloudIcon, HeartPulseIcon, HourglassIcon, ScaleIcon, QuoteIcon, GlobeIcon, PaletteIcon, AppleIcon, SmileIcon, ShoppingBagIcon, CompassIcon, HouseIcon, BusIcon } from './icons';
 import { UserLevel } from '../types';
 import { useUserProgress } from '../contexts/UserProgressContext';
-import { playButtonClickSound } from '../services/soundService';
+import { playButtonClickSound, triggerHapticFeedback } from '../services/soundService';
 
 interface HomeScreenProps {
   onStartLesson: (topic: string, level: string) => void;
@@ -128,6 +128,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartLesson, userLevel }) => 
 
   const handleLessonClick = (topic: string, level: string) => {
     playButtonClickSound(isSoundEnabled);
+    triggerHapticFeedback(isSoundEnabled);
     onStartLesson(topic, level);
   }
 

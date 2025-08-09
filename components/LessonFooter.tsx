@@ -2,7 +2,7 @@ import React from 'react';
 import { AnswerStatus } from '../types';
 import { CheckCircleIcon, XCircleIcon, HeartIcon } from './icons';
 import { useUserProgress } from '../contexts/UserProgressContext';
-import { playButtonClickSound } from '../services/soundService';
+import { playButtonClickSound, triggerHapticFeedback } from '../services/soundService';
 
 interface LessonFooterProps {
   answerStatus: AnswerStatus;
@@ -19,11 +19,13 @@ export const LessonFooter: React.FC<LessonFooterProps> = ({ answerStatus, onChec
   
   const handleCheckClick = () => {
     playButtonClickSound(isSoundEnabled);
+    triggerHapticFeedback(isSoundEnabled);
     onCheck();
   };
 
   const handleContinueClick = () => {
     playButtonClickSound(isSoundEnabled);
+    triggerHapticFeedback(isSoundEnabled);
     onContinue();
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StartScreen from './components/StartScreen';
 import HomeScreen from './components/HomeScreen';
 import LessonScreen from './components/LessonScreen';
@@ -12,6 +12,8 @@ import { UserProgressProvider, useUserProgress } from './contexts/UserProgressCo
 import InfoModal from './components/InfoModal';
 import ConfirmationModal from './components/ConfirmationModal';
 import AnimatedBackground from './components/AnimatedBackground';
+import SplashScreen from './components/SplashScreen';
+import UpdatePrompt from './components/UpdatePrompt';
 
 const AppContent: React.FC = () => {
   const { 
@@ -24,8 +26,6 @@ const AppContent: React.FC = () => {
     hideConfirmationModal
   } = useUserProgress();
 
-  // Set the initial view based on whether a user level is already stored.
-  // This ensures the start screen is only shown on the first visit.
   const [currentView, setCurrentView] = useState<AppView>(() => userLevel ? 'HOME' : 'START');
   
   const [currentLesson, setCurrentLesson] = useState<{ topic: string; level: string } | null>(null);
@@ -40,7 +40,6 @@ const AppContent: React.FC = () => {
   };
 
   const handleLessonFinish = (score: number, total: number, xp: number) => {
-    // Logic to unlock next level
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
     if (userLevel && currentLesson?.topic.includes('Challenge') && percentage >= 80) {
         const levelRanks: Record<UserLevel, number> = { Beginner: 1, Intermediate: 2, Advanced: 3 };
@@ -101,9 +100,6 @@ const AppContent: React.FC = () => {
     setCurrentView('PLACEMENT_TEST_COMPLETE');
   };
 
-  // The previous check here is no longer needed as the initial state of 
-  // `currentView` correctly handles the application's starting point.
-
   const renderContent = () => {
     switch (currentView) {
       case 'START':
@@ -143,8 +139,8 @@ const AppContent: React.FC = () => {
       <AnimatedBackground />
       <div className="min-h-screen bg-transparent text-slate-800 dark:text-slate-200 flex flex-col items-center p-4 selection:bg-purple-400/50">
         <div className="w-full max-w-2xl mx-auto">
-          <Header onHomeClick={currentView === 'HOME' || !userLevel ? goToStart : goHome} showHomeButton={currentView !== 'START' && !!userLevel} />
-          <main className="mt-8">
+          <Header onHomeClick={goHome} showHomeButton={currentView !== 'HOME' && !!userLevel} />
+          <main key={currentView} className="mt-8 main-content-fade-in">
             {renderContent()}
           </main>
         </div>
@@ -172,11 +168,82 @@ const AppContent: React.FC = () => {
 };
 
 
-const App: React.FC = () => (
-    <UserProgressProvider>
-        <AppContent />
-    </UserProgressProvider>
-);
+const App: React.FC = () => {
+    const [isInitializing, setIsInitializing] = useState(true);
+    const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
+    const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+
+    useEffect(() => {
+        // PWA Service Worker update logic
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then(registration => {
+                console.log('FarsiLingo PWA Service Worker registered: ', registration);
+                
+                // This will be called if a new service worker is waiting to activate.
+                // This can happen if the user opens the PWA in a new tab, and an update
+                // was already downloaded but not activated in another tab.
+                if (registration.waiting) {
+                    setWaitingWorker(registration.waiting);
+                    setShowUpdatePrompt(true);
+                }
+
+                // This is called when a new service worker is found and starts installing.
+                registration.onupdatefound = () => {
+                    const installingWorker = registration.installing;
+                    if (installingWorker) {
+                        installingWorker.onstatechange = () => {
+                            // When the new worker is installed and a previous worker is controlling the page,
+                            // show the update prompt.
+                            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                setWaitingWorker(installingWorker);
+                                setShowUpdatePrompt(true);
+                            }
+                        };
+                    }
+                };
+            }).catch(registrationError => {
+                console.log('SW registration failed: ', registrationError);
+            });
+
+            // This is called when the new service worker has taken control.
+            // We reload the page to ensure the user gets the latest assets.
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    window.location.reload();
+                    refreshing = true;
+                }
+            });
+        }
+        
+        // Simulate loading time for assets, etc.
+        const timer = setTimeout(() => {
+            setIsInitializing(false);
+        }, 2000); // Show splash for 2 seconds
+
+        return () => clearTimeout(timer);
+    }, []);
+    
+    const handleUpdate = () => {
+        if (waitingWorker) {
+            // Send a message to the waiting service worker to activate immediately.
+            waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+            setShowUpdatePrompt(false);
+        }
+    };
+
+
+    if (isInitializing) {
+        return <SplashScreen />;
+    }
+
+    return (
+        <UserProgressProvider>
+            <AppContent />
+            <UpdatePrompt show={showUpdatePrompt} onUpdate={handleUpdate} />
+        </UserProgressProvider>
+    );
+};
 
 
 export default App;

@@ -1,7 +1,6 @@
-// A service to play sound effects for user actions.
+// A service to play sound effects and haptics for user actions.
 
 // Pre-create audio elements to reduce delay on first play.
-// NOTE: You must provide your own sound files in the `public/sounds/` directory.
 const sounds: { [key: string]: HTMLAudioElement | null } = {
   correct: typeof Audio !== 'undefined' ? new Audio('/sounds/correct.mp3') : null,
   incorrect: typeof Audio !== 'undefined' ? new Audio('/sounds/incorrect.mp3') : null,
@@ -20,12 +19,9 @@ if (sounds.click) sounds.click.volume = 0.3;
 
 const playSound = (sound: HTMLAudioElement | null) => {
     if (sound) {
-        // Rewind to the start in case it's already playing
         sound.currentTime = 0;
         sound.play().catch(error => {
-            // Autoplay was prevented. This is common and expected in browsers.
-            // We don't need to log this as an error unless we're debugging.
-            // console.error("Sound play failed:", error);
+            // Autoplay was prevented. This is common and expected.
         });
     }
 }
@@ -48,4 +44,16 @@ export const playLessonCompleteSound = (isSoundEnabled: boolean) => {
 
 export const playButtonClickSound = (isSoundEnabled: boolean) => {
     if (isSoundEnabled) playSound(sounds.click);
+};
+
+/**
+ * Triggers a short haptic feedback vibration if the browser supports it.
+ * Tied to isSoundEnabled to give users a single control for all feedback.
+ * @param {boolean} isSoundEnabled - Whether sounds (and haptics) are globally enabled.
+ */
+export const triggerHapticFeedback = (isSoundEnabled: boolean) => {
+    if (isSoundEnabled && typeof navigator.vibrate === 'function') {
+        // A short, 20ms vibration for a "tap" feel.
+        navigator.vibrate(20);
+    }
 };

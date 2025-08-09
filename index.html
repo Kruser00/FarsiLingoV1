@@ -16,15 +16,12 @@
     <style>
       body {
         font-family: 'Vazirmatn', sans-serif;
-        /* The background-color is now handled by the .background-shapes container */
         color: #0f172a; /* slate-900 */
       }
       .dark body {
-        /* The background-color is now handled by the .background-shapes container */
         color: #e2e8f0; /* slate-200 */
       }
       
-      /* A more dramatic float animation */
       @keyframes float {
         0% {
           transform: translate(0, 0) rotate(0deg) scale(1.1);
@@ -55,16 +52,15 @@
       .shape {
         position: absolute;
         border-radius: 9999px; /* full circle */
-        opacity: 0.4; /* More opaque */
-        filter: blur(60px); /* Less blur */
+        opacity: 0.4;
+        filter: blur(60px);
         will-change: transform;
       }
 
       .dark .shape {
-        opacity: 0.5; /* More opaque in dark mode */
+        opacity: 0.5;
       }
 
-      /* Shape 1 - Large, slow, diagonal movement */
       .shape1 {
         width: 450px;
         height: 450px;
@@ -76,7 +72,6 @@
         --ty: 50px;
       }
 
-      /* Shape 2 - Medium, faster, vertical movement */
       .shape2 {
         width: 380px;
         height: 380px;
@@ -89,7 +84,6 @@
         --ty: -120px;
       }
 
-      /* Shape 3 - Smaller, medium speed, central movement */
       .shape3 {
         width: 320px;
         height: 320px;
@@ -102,7 +96,6 @@
         --ty: 80px;
       }
 
-      /* Add a fourth shape for more dynamism */
       .shape4 {
         width: 250px;
         height: 250px;
@@ -114,11 +107,65 @@
         --tx: -80px;
         --ty: 60px;
       }
+      
+      /* View transition animation */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
 
-      /* Responsive adjustments for mobile */
+      .main-content-fade-in {
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+
+      /* Splash screen styles */
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.05);
+          opacity: 0.9;
+        }
+      }
+      
+      .splash-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        inset: 0;
+        background-color: #020617; /* slate-950 */
+        z-index: 100;
+        transition: opacity 0.5s ease-out;
+      }
+      
+      .splash-logo {
+        animation: pulse 2s infinite ease-in-out;
+      }
+
+      /* Update Prompt Animation */
+      @keyframes slide-in-up {
+        from {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .animate-slide-in-up {
+        animation: slide-in-up 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+      }
+
+
       @media (max-width: 768px) {
         .shape {
-            filter: blur(50px); /* Slightly less blur on smaller screens */
+            filter: blur(50px);
         }
         .shape1 {
             width: 250px;
