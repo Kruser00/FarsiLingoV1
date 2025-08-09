@@ -30,11 +30,12 @@ declare global {
 const ADIVERY_APP_ID = 'fd86f445-b8f8-4177-bec6-dcb50dd68f15';
 const REWARDED_VIDEO_PLACEMENT_ID = '2fa75852-230b-4e10-9f10-4bad0e8b4206';
 
-let isRequestInProgress = false;
+// State management
+let isRequestInProgress = false; // Lock for showing an ad
+let isPreloadInProgress = false; // Lock for preloading
 let isConfigured = false;
-
-// A memoized promise to ensure we only try to initialize the SDK once.
 let adiveryInitializationPromise: Promise<void> | null = null;
+let preloadedAd: AdiveryAd | null = null; // The preloaded ad object
 
 /**
  * Ensures the Adivery SDK is loaded and initialized by dynamically injecting the script.
@@ -113,8 +114,43 @@ const ensureAdiveryIsReady = (): Promise<void> => {
 };
 
 /**
+ * Preloads a rewarded video ad in the background. This is an optimistic call
+ * and will fail silently (logging to console) if an ad is not available,
+ * as it's not a user-initiated action.
+ */
+export const preloadRewardedVideo = async (): Promise<void> => {
+    if (isRequestInProgress || isPreloadInProgress || preloadedAd) {
+        console.log("Ad preload skipped: another ad operation is in progress or an ad is already loaded.");
+        return;
+    }
+
+    try {
+        await ensureAdiveryIsReady();
+    } catch (error) {
+        console.warn("Ad service initialization failed during preload. Aborting preload.", error);
+        return; // Don't proceed if SDK is not ready
+    }
+
+    const Adivery = window.Adivery!;
+    isPreloadInProgress = true;
+    console.log("Preloading rewarded ad...");
+
+    try {
+        preloadedAd = await Adivery.requestRewardedAd(REWARDED_VIDEO_PLACEMENT_ID);
+        console.log("Rewarded ad preloaded successfully.");
+    } catch (error) {
+        // Preloading errors are not critical for the user. "No fill" is expected. Just log and reset.
+        console.warn("Rewarded ad preload failed (this is often expected):", error);
+        preloadedAd = null; // Ensure no stale ad is kept
+    } finally {
+        isPreloadInProgress = false;
+    }
+};
+
+/**
  * Shows a rewarded video ad using the Adivery SDK.
- * This function handles SDK initialization, ad requests, and error handling.
+ * It will first try to use a preloaded ad for instant display. If none is available,
+ * it will request one on-demand.
  * @returns A promise that resolves to `true` if the user was rewarded, `false` otherwise.
  */
 export const showRewardedVideo = async (): Promise<boolean> => {
@@ -127,31 +163,34 @@ export const showRewardedVideo = async (): Promise<boolean> => {
         throw error;
     }
 
-    // At this point, window.Adivery is guaranteed to be available.
-    const Adivery = window.Adivery!;
-    
     // Prevent multiple ad requests from starting simultaneously.
     if (isRequestInProgress) {
-        console.warn("An ad request is already in progress.");
+        console.warn("An ad show request is already in progress.");
         throw new Error("An ad request is already in progress.");
     }
 
     isRequestInProgress = true;
 
     try {
-        console.log(`Requesting rewarded ad for placement: ${REWARDED_VIDEO_PLACEMENT_ID}`);
-        // Step 1: Request the ad.
-        const ad = await Adivery.requestRewardedAd(REWARDED_VIDEO_PLACEMENT_ID);
-        
-        console.log("Rewarded ad loaded successfully. Showing ad...");
-        // Step 2: Show the ad and get the reward status.
-        const isRewarded = await ad.show();
+        let ad: AdiveryAd;
 
+        if (preloadedAd) {
+            console.log("Using preloaded ad.");
+            ad = preloadedAd;
+            preloadedAd = null; // Consume the ad so it's not used again.
+        } else {
+            console.log("No preloaded ad available. Requesting ad on-demand.");
+            const Adivery = window.Adivery!;
+            ad = await Adivery.requestRewardedAd(REWARDED_VIDEO_PLACEMENT_ID);
+        }
+        
+        console.log("Ad loaded successfully. Showing ad...");
+        const isRewarded = await ad.show();
         console.log(`Ad finished. Rewarded: ${isRewarded}`);
         return isRewarded;
 
     } catch (error: any) {
-        console.error("Adivery ad error:", error);
+        console.error("Adivery ad error during showRewardedVideo:", error);
         
         const errorMessage = (error?.message || String(error)).toLowerCase();
 

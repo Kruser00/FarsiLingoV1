@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Exercise, AnswerStatus, ExerciseType } from '../types';
 import { generateLesson, evaluateAnswer } from '../services/geminiService';
 import { playCorrectSound, playIncorrectSound, playHeartLostSound } from '../services/soundService';
+import { preloadRewardedVideo } from '../services/adService';
 import { ExerciseCard } from './ExerciseCard';
 import { LessonFooter } from './LessonFooter';
 import { ProgressBar } from './ProgressBar';
@@ -27,6 +28,12 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
   const [isOutOfHearts, setIsOutOfHearts] = useState(false);
 
   const { hearts, loseHeart, addXp, isSoundEnabled } = useUserProgress();
+  
+  useEffect(() => {
+    // Preload an ad when the lesson starts as an optimization.
+    // It runs in the background and failures are handled silently by the adService.
+    preloadRewardedVideo();
+  }, []); // Run only on initial mount of the lesson screen.
 
   useEffect(() => {
     const fetchLesson = async () => {
