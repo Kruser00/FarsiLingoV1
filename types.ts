@@ -23,10 +23,7 @@ export type AnswerStatus = 'UNANSWERED' | 'CORRECT' | 'INCORRECT';
 export interface UserProgress {
     xp: number;
     level: number;
-    gems: number;
     hearts: number;
-    streak: number;
-    lastLessonDate: string | null; // ISO date string yyyy-mm-dd
     lastHeartRefillTimestamp: number; // UTC timestamp ms
     lastAdRewardTimestamp: number; // UTC timestamp ms
     userLevel: UserLevel | null;

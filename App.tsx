@@ -17,9 +17,7 @@ const AppContent: React.FC = () => {
   const { 
     userLevel, 
     setUserLevel, 
-    updateStreak, 
-    addGems, 
-    hearts, 
+    addXp, 
     infoModal, 
     hideInfoModal,
     confirmationModal,
@@ -34,25 +32,14 @@ const AppContent: React.FC = () => {
   const [lessonResult, setLessonResult] = useState<{ score: number, total: number, xp: number } | null>(null);
   const [lessonKey, setLessonKey] = useState<number>(0);
   const [placementTestLevel, setPlacementTestLevel] = useState<UserLevel>('Beginner');
-  const [showNoHeartsModal, setShowNoHeartsModal] = useState(false);
 
   const startLesson = (topic: string, level: string) => {
-    if (hearts <= 0) {
-      setShowNoHeartsModal(true);
-      return;
-    }
     setCurrentLesson({ topic, level });
     setCurrentView('LESSON');
     setLessonKey(prevKey => prevKey + 1);
   };
 
   const handleLessonFinish = (score: number, total: number, xp: number) => {
-    // Award gems and update streak for completing a lesson (not a challenge test)
-    if (!currentLesson?.topic.includes('Challenge')) {
-      addGems(10); // Award 10 gems for finishing a lesson
-      updateStreak();
-    }
-    
     // Logic to unlock next level
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
     if (userLevel && currentLesson?.topic.includes('Challenge') && percentage >= 80) {
@@ -128,7 +115,7 @@ const AppContent: React.FC = () => {
       case 'PLACEMENT_TEST_COMPLETE':
         return <PlacementTestCompleteScreen level={placementTestLevel} onContinue={goHome} />;
       case 'HOME':
-        return <HomeScreen onStartLesson={startLesson} userLevel={userLevel} showNoHeartsModal={showNoHeartsModal} setShowNoHeartsModal={setShowNoHeartsModal} />;
+        return <HomeScreen onStartLesson={startLesson} userLevel={userLevel} />;
       case 'LESSON':
         if (currentLesson) {
           return <LessonScreen key={lessonKey} topic={currentLesson.topic} level={currentLesson.level} onFinish={handleLessonFinish} />;

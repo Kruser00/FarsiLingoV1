@@ -1,80 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { HomeIcon, HeartIcon, FlameIcon, GemIcon, SpeakerLoudIcon, SpeakerOffIcon, GiftIcon, ClockIcon } from './icons';
+import { HomeIcon, HeartIcon, SpeakerLoudIcon, SpeakerOffIcon, VideoIcon, ClockIcon } from './icons';
 import { useUserProgress } from '../contexts/UserProgressContext';
-import { showRewardedVideo } from '../services/adService';
 import { playButtonClickSound } from '../services/soundService';
-
-const AD_REWARD_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
-const GEMS_FROM_AD = 15;
-
-const AdRewardButton: React.FC = () => {
-    const { addGemsFromAd, lastAdRewardTimestamp, isSoundEnabled, showInfoModal, showConfirmationModal } = useUserProgress();
-    const [cooldownTime, setCooldownTime] = useState(0);
-    const [isWatchingAd, setIsWatchingAd] = useState(false);
-
-    useEffect(() => {
-        const updateCooldown = () => {
-            const timeSinceLastAd = Date.now() - lastAdRewardTimestamp;
-            const remaining = AD_REWARD_COOLDOWN_MS - timeSinceLastAd;
-            setCooldownTime(Math.max(0, remaining));
-        };
-
-        updateCooldown(); // Initial check
-        const interval = setInterval(updateCooldown, 1000);
-
-        return () => clearInterval(interval);
-    }, [lastAdRewardTimestamp]);
-
-    const handleWatchAd = () => {
-        if (cooldownTime > 0 || isWatchingAd) return;
-        
-        playButtonClickSound(isSoundEnabled);
-        showConfirmationModal({
-            title: 'دریافت جایزه با تماشای ویدیو',
-            message: `برای دریافت ${GEMS_FROM_AD} الماس، باید ویدیو را تا انتها تماشا کنید. آیا مایل به ادامه هستید؟`,
-            confirmText: 'بله، تماشا می‌کنم',
-            cancelText: 'نه، ممنون',
-            onConfirm: async () => {
-                setIsWatchingAd(true);
-                try {
-                    const rewarded = await showRewardedVideo();
-                    if (rewarded) {
-                        addGemsFromAd(GEMS_FROM_AD);
-                    } else {
-                        showInfoModal('جایزه دریافت نشد', 'شما برای دریافت جایزه باید ویدیو را تا انتها تماشا کنید.');
-                    }
-                } catch (error) {
-                    console.error("Ad error:", error);
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    showInfoModal('خطا در تبلیغ', errorMessage);
-                } finally {
-                    setIsWatchingAd(false);
-                }
-            }
-        });
-    };
-
-    const minutes = Math.floor(cooldownTime / 60000);
-    const seconds = Math.floor((cooldownTime % 60000) / 1000).toString().padStart(2, '0');
-
-    const isDisabled = cooldownTime > 0 || isWatchingAd;
-    const buttonText = isWatchingAd ? '...' : cooldownTime > 0 ? `${minutes}:${seconds}` : `+${GEMS_FROM_AD}`;
-
-    return (
-        <button
-            onClick={handleWatchAd}
-            disabled={isDisabled}
-            className="flex items-center gap-1.5 p-1.5 md:p-2 rounded-lg bg-slate-800/50 text-slate-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed hover:bg-slate-700/80"
-            aria-label={isDisabled ? `جایزه در ${minutes}:${seconds} در دسترس است` : `مشاهده تبلیغ برای ${GEMS_FROM_AD} الماس`}
-        >
-            <div className={cooldownTime > 0 ? "text-slate-400" : "text-teal-400"}>
-                {cooldownTime > 0 ? <ClockIcon className="w-5 h-5" /> : <GiftIcon className="w-5 h-5" />}
-            </div>
-            <span className="font-bold text-sm md:text-md md:min-w-[50px] text-center">{buttonText}</span>
-        </button>
-    );
-};
-
+import { showRewardedVideo } from '../services/adService';
 
 const StatItem: React.FC<{ icon: React.ReactNode; value: number | string; colorClass: string; }> = ({ icon, value, colorClass }) => (
     <div className={`flex items-center gap-1 p-1.5 md:p-2 rounded-lg bg-slate-800/50`}>
@@ -83,8 +11,113 @@ const StatItem: React.FC<{ icon: React.ReactNode; value: number | string; colorC
     </div>
 );
 
+const AD_REWARD_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_HEARTS = 5;
+
+const AdRewardButton: React.FC = () => {
+    const { 
+        hearts, 
+        refillHeartsWithAd, 
+        lastAdRewardTimestamp, 
+        isSoundEnabled, 
+        showInfoModal, 
+        showConfirmationModal 
+    } = useUserProgress();
+    
+    const [isShowingAd, setIsShowingAd] = useState(false);
+    const [cooldownTime, setCooldownTime] = useState(0);
+
+    useEffect(() => {
+        const updateCooldown = () => {
+            const timeSinceLastAd = Date.now() - lastAdRewardTimestamp;
+            const remaining = AD_REWARD_COOLDOWN_MS - timeSinceLastAd;
+            setCooldownTime(Math.max(0, remaining));
+        };
+
+        updateCooldown();
+        const interval = setInterval(updateCooldown, 1000);
+        return () => clearInterval(interval);
+    }, [lastAdRewardTimestamp]);
+
+    const handleAdRefill = () => {
+        if (isShowingAd || cooldownTime > 0 || hearts >= MAX_HEARTS) return;
+        playButtonClickSound(isSoundEnabled);
+
+        showConfirmationModal({
+            title: 'دریافت قلب با تماشای ویدیو',
+            message: 'برای پر کردن تمام قلب‌های خود، باید ویدیو را تا انتها تماشا کنید. آیا مایل به ادامه هستید؟',
+            confirmText: 'بله، تماشا می‌کنم',
+            cancelText: 'نه، ممنون',
+            onConfirm: async () => {
+                setIsShowingAd(true);
+                try {
+                    const rewarded = await showRewardedVideo();
+                    if (rewarded) {
+                        refillHeartsWithAd();
+                        showInfoModal('جایزه دریافت شد!', 'قلب‌های شما با موفقیت پر شد.');
+                    } else {
+                        showInfoModal('جایزه دریافت نشد', 'برای دریافت قلب باید ویدیو را تا انتها تماشا کنید.');
+                    }
+                } catch (error) {
+                    console.error("Ad error:", error);
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    showInfoModal('خطا در تبلیغ', errorMessage);
+                } finally {
+                    setIsShowingAd(false);
+                }
+            }
+        });
+    };
+
+    const isButtonDisabled = isShowingAd || cooldownTime > 0 || hearts >= MAX_HEARTS;
+    const minutes = Math.floor(cooldownTime / 60000);
+    const seconds = Math.floor((cooldownTime % 60000) / 1000).toString().padStart(2, '0');
+
+    let buttonContent;
+    if (isShowingAd) {
+        buttonContent = (
+            <>
+                <div className="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
+                <span className="text-sm">در حال بارگذاری...</span>
+            </>
+        );
+    } else if (cooldownTime > 0) {
+        buttonContent = (
+            <>
+                <ClockIcon className="w-4 h-4" />
+                <span className="text-sm font-mono">{minutes}:{seconds}</span>
+            </>
+        );
+    } else if (hearts >= MAX_HEARTS) {
+        buttonContent = (
+            <>
+                <HeartIcon className="w-4 h-4 fill-green-500" />
+                <span className="text-sm">پر</span>
+            </>
+        );
+    } else {
+        buttonContent = (
+            <>
+                <VideoIcon className="w-4 h-4" />
+                <span className="text-sm">قلب رایگان</span>
+            </>
+        );
+    }
+    
+    return (
+        <button
+            onClick={handleAdRefill}
+            disabled={isButtonDisabled}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 text-white shadow-md transition-all hover:bg-indigo-500 disabled:bg-slate-600 disabled:opacity-70 disabled:cursor-not-allowed"
+            aria-label="دریافت قلب با تماشای ویدیو"
+        >
+            {buttonContent}
+        </button>
+    );
+};
+
 export const Header: React.FC<{ onHomeClick: () => void; showHomeButton: boolean; }> = ({ onHomeClick, showHomeButton }) => {
-    const { hearts, streak, gems, userLevel, isSoundEnabled, toggleSound } = useUserProgress();
+    const { hearts, userLevel, isSoundEnabled, toggleSound } = useUserProgress();
     
     const handleToggleSound = () => {
         playButtonClickSound(!isSoundEnabled); // Play sound based on the action it's about to perform
@@ -105,10 +138,8 @@ export const Header: React.FC<{ onHomeClick: () => void; showHomeButton: boolean
             </div>
             
             {userLevel && (
-                <div className="flex items-center gap-1 md:gap-2">
+                <div className="flex items-center gap-2 md:gap-3">
                     <AdRewardButton />
-                    <StatItem icon={<GemIcon className="w-5 h-5" />} value={gems} colorClass="text-sky-400" />
-                    <StatItem icon={<FlameIcon className="w-5 h-5" />} value={streak} colorClass="text-orange-400" />
                     <StatItem icon={<HeartIcon className="w-5 h-5 fill-red-500 stroke-red-500" />} value={hearts} colorClass="text-red-500" />
                 </div>
             )}

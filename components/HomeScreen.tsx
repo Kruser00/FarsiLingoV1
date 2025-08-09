@@ -1,15 +1,12 @@
 import React from 'react';
 import { BookOpenIcon, UtensilsIcon, PlaneIcon, ShoppingCartIcon, UsersIcon, CalendarIcon, BriefcaseIcon, UserIcon, CalendarDaysIcon, HeartIcon, MapPinIcon, MessageSquareIcon, LockIcon, ClockIcon, HelpCircleIcon, ArchiveIcon, CloudIcon, HeartPulseIcon, HourglassIcon, ScaleIcon, QuoteIcon, GlobeIcon, PaletteIcon, AppleIcon, SmileIcon, ShoppingBagIcon, CompassIcon, HouseIcon, BusIcon } from './icons';
 import { UserLevel } from '../types';
-import NoHeartsModal from './NoHeartsModal';
 import { useUserProgress } from '../contexts/UserProgressContext';
 import { playButtonClickSound } from '../services/soundService';
 
 interface HomeScreenProps {
   onStartLesson: (topic: string, level: string) => void;
   userLevel: UserLevel | null; // From placement test or chosen
-  showNoHeartsModal: boolean;
-  setShowNoHeartsModal: (show: boolean) => void;
 }
 
 const levelRanks: Record<UserLevel, number> = {
@@ -120,7 +117,7 @@ const difficultyLevels = [
 ];
 
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ onStartLesson, userLevel, showNoHeartsModal, setShowNoHeartsModal }) => {
+const HomeScreen: React.FC<HomeScreenProps> = ({ onStartLesson, userLevel }) => {
   const { isSoundEnabled } = useUserProgress();
   const userRank = userLevel ? levelRanks[userLevel] : 0; // 0 means nothing unlocked if no level
 
@@ -131,7 +128,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartLesson, userLevel, showN
 
   return (
     <div className="text-center">
-      <NoHeartsModal isOpen={showNoHeartsModal} onClose={() => setShowNoHeartsModal(false)} />
       
       {userLevel && <LevelProgress />}
 

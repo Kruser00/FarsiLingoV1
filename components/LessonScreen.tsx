@@ -6,6 +6,7 @@ import { ExerciseCard } from './ExerciseCard';
 import { LessonFooter } from './LessonFooter';
 import { ProgressBar } from './ProgressBar';
 import { useUserProgress } from '../contexts/UserProgressContext';
+import NoHeartsModal from './NoHeartsModal';
 
 interface LessonScreenProps {
   topic: string;
@@ -23,8 +24,9 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [isCheckingAnswer, setIsCheckingAnswer] = useState(false);
   const [sessionXp, setSessionXp] = useState(0);
+  const [isOutOfHearts, setIsOutOfHearts] = useState(false);
 
-  const { loseHeart, addXp, isSoundEnabled } = useUserProgress();
+  const { hearts, loseHeart, addXp, isSoundEnabled } = useUserProgress();
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -46,6 +48,18 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
 
     fetchLesson();
   }, [topic, level]);
+
+  // Effect to handle running out of hearts
+  useEffect(() => {
+    // This check ensures the modal doesn't pop up on initial load if hearts are already 0,
+    // but only after a lesson has started and the user runs out.
+    if (exercises.length > 0 && hearts <= 0) {
+        setIsOutOfHearts(true);
+    } else {
+        // If hearts get refilled (e.g., via an ad), this will hide the modal.
+        setIsOutOfHearts(false);
+    }
+  }, [hearts, exercises.length]);
 
   const handleCheckAnswer = useCallback(async () => {
     const answerToCheck = userAnswer;
@@ -79,7 +93,7 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
     } else {
       playIncorrectSound(isSoundEnabled);
       playHeartLostSound(isSoundEnabled);
-      loseHeart();
+      loseHeart(); // This state update will be caught by the useEffect
       setAnswerStatus('INCORRECT');
     }
     setIsCheckingAnswer(false);
@@ -94,6 +108,10 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
        onFinish(correctAnswers, exercises.length, sessionXp);
     }
   };
+  
+  const handleQuitLesson = () => {
+    onFinish(correctAnswers, exercises.length, sessionXp);
+  }
 
   if (isLoading) {
     return (
@@ -124,27 +142,30 @@ const LessonScreen: React.FC<LessonScreenProps> = ({ topic, level, onFinish }) =
   const progress = ((currentIndex + 1) / exercises.length) * 100;
 
   return (
-    <div className="w-full flex flex-col" style={{minHeight: '60vh'}}>
-      <ProgressBar progress={progress} />
-      <div className="flex-grow flex items-center">
-        <ExerciseCard
-            exercise={currentExercise}
-            userAnswer={userAnswer}
-            onAnswerChange={setUserAnswer}
-            answerStatus={answerStatus}
-            onEnterPress={answerStatus === 'UNANSWERED' ? handleCheckAnswer : handleContinue}
+    <>
+      <NoHeartsModal isOpen={isOutOfHearts} onClose={handleQuitLesson} />
+      <div className={`w-full flex flex-col ${isOutOfHearts ? 'opacity-50 pointer-events-none' : ''}`} style={{minHeight: '60vh'}}>
+        <ProgressBar progress={progress} />
+        <div className="flex-grow flex items-center">
+          <ExerciseCard
+              exercise={currentExercise}
+              userAnswer={userAnswer}
+              onAnswerChange={setUserAnswer}
+              answerStatus={answerStatus}
+              onEnterPress={answerStatus === 'UNANSWERED' ? handleCheckAnswer : handleContinue}
+          />
+        </div>
+        <LessonFooter
+          answerStatus={answerStatus}
+          onCheck={handleCheckAnswer}
+          onContinue={handleContinue}
+          isLastQuestion={currentIndex === exercises.length - 1}
+          correctAnswer={currentExercise.answer}
+          isCheckDisabled={!userAnswer.trim() || isCheckingAnswer}
+          isChecking={isCheckingAnswer}
         />
       </div>
-      <LessonFooter
-        answerStatus={answerStatus}
-        onCheck={handleCheckAnswer}
-        onContinue={handleContinue}
-        isLastQuestion={currentIndex === exercises.length - 1}
-        correctAnswer={currentExercise.answer}
-        isCheckDisabled={!userAnswer.trim() || isCheckingAnswer}
-        isChecking={isCheckingAnswer}
-      />
-    </div>
+    </>
   );
 };
 

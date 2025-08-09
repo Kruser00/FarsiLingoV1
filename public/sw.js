@@ -1,4 +1,4 @@
-const CACHE_NAME = 'farsilingo-cache-v1';
+const CACHE_NAME = 'farsilingo-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -16,25 +16,18 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache');
-        // Use a non-blocking fetch for non-essential resources
-        const essentialResources = [
-            '/', 
-            '/index.html', 
-            '/manifest.json',
-            '/icon.svg', 
-            '/icon-192x192.png',
-            '/icon-512x512.png'
-        ];
-        const nonEssentialResources = urlsToCache.filter(url => !essentialResources.includes(url));
-        
-        cache.addAll(nonEssentialResources).catch(e => console.log("Failed to cache non-essential resources", e));
-        
-        return cache.addAll(essentialResources);
+        return cache.addAll(urlsToCache);
       })
   );
 });
 
 self.addEventListener('fetch', event => {
+  // We only want to handle GET requests in the service worker.
+  // Other requests, like POST to our API, should pass through.
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -43,13 +36,14 @@ self.addEventListener('fetch', event => {
           return response;
         }
 
-        // Clone the request because it's a stream and can be consumed only once.
+        // Not in cache, fetch from the network
         const fetchRequest = event.request.clone();
 
         return fetch(fetchRequest).then(
           response => {
-            // Check if we received a valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
+            // Check if we received a valid response to cache
+            // We don't want to cache errors or opaque responses (from no-cors requests)
+            if (!response || response.status !== 200 || response.type === 'opaque') {
               return response;
             }
 
@@ -75,6 +69,7 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
